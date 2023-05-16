@@ -1,6 +1,6 @@
 module PseudoPotentialIOExperimental
 using Artifacts
-using CubicSplines
+using BSplineKit
 using EzXML
 using LazyArtifacts
 using LinearAlgebra
@@ -18,7 +18,6 @@ import Bessels: gamma, sphericalbesselj
 import SpecialFunctions: erf
 
 ## DocStringExtensions Templates
-# TODO they don't seem to be working at the moment ?
 using DocStringExtensions
 @template (FUNCTIONS, METHODS, MACROS) = """
                                          $(TYPEDSIGNATURES)
@@ -43,7 +42,7 @@ include("quantity/quantity.jl")
 export maximum_radius
 export minimum_radius
 export extrema_radius
-export cubic_spline
+export interpolate_onto
 export hankel_transform
 include("quantity/numeric.jl")
 include("quantity/analytical/analytical.jl")
@@ -98,6 +97,10 @@ export UltrasoftPsP
 include("psp/numeric/ultrasoft.jl")
 export ProjectorAugmentedWavePsP
 include("psp/numeric/paw.jl")
+export AnalyticPsP
+include("psp/analytic/analytic.jl")
+export HghPsP
+include("psp/analytic/hgh.jl")
 
 ## Loading/listing/showing functions
 export list_families

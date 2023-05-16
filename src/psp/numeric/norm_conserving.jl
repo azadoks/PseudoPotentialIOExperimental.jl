@@ -10,7 +10,7 @@ struct NormConservingPsP{T<:Real,S<:EvaluationSpace} <: NumericPsP{T,S}
     Zval::T
     "Maximum angular momentum."
     lmax::Int
-    "Local part of the potential on the radial mesh (without an r² prefactor)."
+    "Local part of the potential on the radial mesh (no prefactor)."
     Vloc::NumericLocalPotential{T,S}
     "Nonlocal projectors β[l][n] on the radial mesh (with an r² prefactor)."
     β::OffsetVector{Vector{NumericProjector{T,S}},Vector{Vector{NumericProjector{T,S}}}}
@@ -179,69 +179,53 @@ function maximum_mesh_length(psp::NumericPsP)
     return length(get_quantity(psp, LocalPotential()).f)
 end
 
-function hankel_transform(
-    psp::NormConservingPsP{T,S};
-    qs::AbstractVector{TT}=range(start=T(0), stop=T(30), length=3001),
-    quadrature_method=Simpson(),
-    local_potential_correction=CoulombCorrection(psp)
-)::NormConservingPsP{T,FourierSpace} where {T<:Real, S<:RealSpace, TT<:Real}
+function hankel_transform(psp::NormConservingPsP{T,S};
+                          qs::AbstractVector{TT}=range(; start=T(0), stop=T(30), length=3001),
+                          quadrature_method=Simpson(),
+                          local_potential_correction=ErfCoulombCorrection(psp))::NormConservingPsP{T,
+                                                                                                FourierSpace} where {T<:Real,
+                                                                                                                     S<:RealSpace,
+                                                                                                                     TT<:Real}
     n = maximum_mesh_length(psp)
-    work_weights=Vector{T}(undef, n)
-    work_integrand=Vector{TT}(undef, n)
-    work_f=Vector{T}(undef, n)
+    work_weights = Vector{T}(undef, n)
+    work_integrand = Vector{TT}(undef, n)
+    work_f = Vector{T}(undef, n)
 
-    Vloc = hankel_transform(get_quantity(psp, LocalPotential()), local_potential_correction,
-                                         qs, quadrature_method, work_weights,
-                                         work_integrand, work_f)
-
-    β = map(angular_momenta(psp)) do l
-        map(1:n_radials(psp, BetaProjector(), l)) do n
-            return hankel_transform(get_quantity(psp, BetaProjector(), l, n), qs, quadrature_method, work_weights, work_integrand, work_f)
+    Vloc = hankel_transform(get_quantity(psp, LocalPotential()), local_potential_correction, qs,
+                            quadrature_method, work_weights, work_integrand, work_f)
+    β = map(get_quantity(psp, BetaProjector())) do βl
+        map(βl) do βln
+            return hankel_transform(βln, qs, quadrature_method, work_weights, work_integrand, work_f)
         end
     end
-    β = OffsetVector(β, angular_momenta(psp))
-
-    χ = map(angular_momenta(psp)) do l
-        map(1:n_radials(psp, ChiProjector(), l)) do n
-            return hankel_transform(get_quantity(psp, ChiProjector(), l, n), qs, quadrature_method, work_weights, work_integrand, work_f)
+    χ = map(get_quantity(psp, ChiProjector())) do χl
+        map(χl) do χln
+            return hankel_transform(χln, qs, quadrature_method, work_weights, work_integrand, work_f)
         end
     end
-    χ = OffsetVector(χ, angular_momenta(psp))
+    ρcore = hankel_transform(get_quantity(psp, CoreChargeDensity()), qs, quadrature_method, work_weights,
+                             work_integrand, work_f)
+    ρval = hankel_transform(get_quantity(psp, ValenceChargeDensity()), qs, quadrature_method, work_weights,
+                            work_integrand, work_f)
 
-    ρcore = hankel_transform(get_quantity(psp, CoreChargeDensity()), qs, quadrature_method, work_weights, work_integrand, work_f)
-
-    ρval = hankel_transform(get_quantity(psp, ValenceChargeDensity()), qs, quadrature_method, work_weights, work_integrand, work_f)
-
-    return NormConservingPsP{TT,FourierSpace}(
-        psp.identifier, psp.Zatom, psp.Zval, psp.lmax, Vloc, β, psp.D, χ, ρcore, ρval
-    )
+    return NormConservingPsP{TT,FourierSpace}(psp.identifier, psp.Zatom, psp.Zval, psp.lmax, Vloc, β, psp.D, χ,
+                                              ρcore, ρval)
 end
 
-function cubic_spline(
-    maximum_spacing::T,
-    psp::NormConservingPsP{T,S}
-) where {T<:Real,S<:EvaluationSpace}
-    Vloc = cubic_spline(maximum_spacing, get_quantity(psp, LocalPotential()))
-
-    β = map(angular_momenta(psp)) do l
-        map(1:n_radials(psp, BetaProjector(), l)) do n
-            return cubic_spline(maximum_spacing, get_quantity(psp, BetaProjector(), l, n))
+function interpolate_onto(maximum_spacing::T,
+                          psp::NormConservingPsP{T,S}) where {T<:Real,S<:EvaluationSpace}
+    Vloc = interpolate_onto(maximum_spacing, get_quantity(psp, LocalPotential()))
+    β = map(get_quantity(psp, BetaProjector())) do βl
+        map(βl) do βln
+            return interpolate_onto(maximum_spacing, βln)
         end
     end
-    β = OffsetVector(β, angular_momenta(psp))
-
-    χ = map(angular_momenta(psp)) do l
-        map(1:n_radials(psp, ChiProjector(), l)) do n
-            return cubic_spline(maximum_spacing, get_quantity(psp, ChiProjector(), l, n))
+    χ = map(get_quantity(psp, ChiProjector())) do χl
+        map(χl) do χln
+            return interpolate_onto(maximum_spacing, χln)
         end
     end
-    χ = OffsetVector(χ, angular_momenta(psp))
-
-    ρcore = cubic_spline(maximum_spacing, get_quantity(psp, CoreChargeDensity()))
-
-    ρval = cubic_spline(maximum_spacing, get_quantity(psp, ValenceChargeDensity()))
-
-    return NormConservingPsP{T,S}(
-        psp.identifier, psp.Zatom, psp.Zval, psp.lmax, Vloc, β, psp.D, χ, ρcore, ρval
-    )
+    ρcore = interpolate_onto(maximum_spacing, get_quantity(psp, CoreChargeDensity()))
+    ρval = interpolate_onto(maximum_spacing, get_quantity(psp, ValenceChargeDensity()))
+    return NormConservingPsP{T,S}(psp.identifier, psp.Zatom, psp.Zval, psp.lmax, Vloc, β, psp.D, χ, ρcore, ρval)
 end

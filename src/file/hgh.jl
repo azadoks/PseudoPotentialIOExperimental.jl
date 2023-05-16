@@ -93,24 +93,24 @@ function HghFile(path::AbstractString)
     end
 end
 
-# identifier(psp::HghFile)::String = psp.identifier
-# format(::HghFile)::String = "HGH"
-# function element(psp::HghFile)
-#     title = split(psp.title)
-#     isempty(title) && return "??"
-#     symbol = title[1]
-#     return haskey(PeriodicTable.elements, Symbol(symbol)) ? PeriodicTable.elements[Symbol(symbol)] : "??"
-# end
-# has_spin_orbit(::HghFile)::Bool = false
-# has_core_density(::HghFile)::Bool = false
-# is_norm_conserving(::HghFile)::Bool = true
-# is_ultrasoft(::HghFile)::Bool = false
-# is_paw(::HghFile)::Bool = false
-# valence_charge(psp::HghFile) = sum(psp.zion)
-# max_angular_momentum(psp::HghFile)::Int = psp.lmax
-# n_radials(::NumericProjector, psp::HghFile, l::Int)::Int = size(psp.h[l + 1], 1)
-# n_radials(::NumericState, ::HghFile, l::Int)::Int = 0
-# has_quantity(::AbstractPsPQuantity, ::HghFile) = false
-# has_quantity(::NumericLocalPotential, ::HghFile) = true
-# has_quantity(::NumericProjector, ::HghFile) = true
-# has_quantity(::BetaCoupling, ::HghFile) = true
+identifier(psp::HghFile)::String = psp.identifier
+format(::HghFile)::String = "HGH"
+function element(psp::HghFile)
+    title = split(psp.title)
+    isempty(title) && return "??"
+    symbol = title[1]
+    return haskey(PeriodicTable.elements, Symbol(symbol)) ? PeriodicTable.elements[Symbol(symbol)] : "??"
+end
+has_spin_orbit(::HghFile)::Bool = false
+has_core_density(::HghFile)::Bool = false
+is_norm_conserving(::HghFile)::Bool = true
+is_ultrasoft(::HghFile)::Bool = false
+is_paw(::HghFile)::Bool = false
+valence_charge(psp::HghFile) = sum(psp.zion)
+max_angular_momentum(psp::HghFile)::Int = psp.lmax
+n_radials(::BetaProjector, psp::HghFile, l::Int)::Int = size(psp.h[l + 1], 1)
+n_radials(::ChiProjector, ::HghFile, l::Int)::Int = 0
+has_quantity(::AbstractPsPQuantity, ::HghFile) = false
+has_quantity(::LocalPotential, ::HghFile) = true
+has_quantity(::BetaProjector, ::HghFile) = true
+has_quantity(::BetaCoupling, ::HghFile) = true

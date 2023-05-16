@@ -1,4 +1,4 @@
-abstract type LocalPotentialCorrection{T,S} <: AbstractPsPQuantity end
+abstract type LocalPotentialCorrection{T,S} end
 
 struct CoulombCorrection{T<:Real,S<:EvaluationSpace} <: LocalPotentialCorrection{T,S}
     Z::T

@@ -19,7 +19,7 @@ struct UltrasoftPsP{T,S} <: NumericPsP{T,S}
     "Pseudo-atomic wavefunctions χ[l][n] on the radial mesh (with an r² prefactor)."
     χ::OffsetVector{Vector{NumericProjector{T,S}},Vector{Vector{NumericProjector{T,S}}}}
     "Augmentation charge density functions Q[l][n,m] on the radial mesh"
-    Q::OffsetVector{Matrix{Vector{T}},Vector{Matrix{Vector{T}}}}
+    Q::OffsetVector{Matrix{NumericAugmentation{T,S}},Vector{Matrix{NumericAugmentation{T,S}}}}
     "Augmentation charges q[l][n,m]"
     q::OffsetVector{Matrix{T},Vector{Matrix{T}}}
     "Model core charge density on the radial mesh (with an r² prefactor)."
@@ -39,20 +39,27 @@ function UltrasoftPsP(upf::UpfFile)
 end
 
 function _upf_construct_augmentation_q_with_l(upf::UpfFile)
-    Q = OffsetVector([Matrix{Vector{Float64}}(undef, upf.header.number_of_proj,
-                                              upf.header.number_of_proj)
+    Q = OffsetVector([Matrix{NumericAugmentation{Float64,RealSpace}}(undef, upf.header.number_of_proj,
+                                                                     upf.header.number_of_proj)
                       for l in 0:(2upf.header.l_max)], 0:(2upf.header.l_max))
     for l in 0:(2upf.header.l_max)
-        # Fill Q with zero vectors
+        # Fill Q with zeroed quantities
         for i in 1:(upf.header.number_of_proj), j in 1:(upf.header.number_of_proj)
-            Q[l][i, j] = zeros(length(upf.mesh.r))
+            r = ArbitraryMesh(upf.mesh.r, upf.mesh.rab)
+            f = zero(r)
+            Q[l][i, j] = NumericAugmentation(i, j, l, r, f)
         end
-        # Replace the zero vectors with data from the UPF where present
+        # Replace the zeroed quantities with data from the UPF where present
         Q_upf_l = filter(qijl -> qijl.angular_momentum == l,
                          upf.nonlocal.augmentation.qijls)
         for Q_upf in Q_upf_l
-            Q[l][Q_upf.first_index, Q_upf.second_index] = Q_upf.qijl
-            Q[l][Q_upf.second_index, Q_upf.first_index] = Q_upf.qijl
+            n1 = Q_upf.first_index
+            n2 = Q_upf.second_index
+            f = Q_upf.qijl
+            r = ArbitraryMesh(upf.mesh.r[eachindex(f)], upf.mesh.rab[eachindex(f)])
+
+            Q[l][n1, n2] = NumericAugmentation(n1, n2, l, r, f)
+            Q[l][n2, n1] = NumericAugmentation(n2, n1, l, r, f)
         end
     end
     return Q
@@ -65,13 +72,15 @@ end
     nqf = upf.nonlocal.augmentation.nqf
     nqlc = 2upf.header.l_max + 1
 
-    Q = OffsetVector([Matrix{Vector{Float64}}(undef, upf.header.number_of_proj,
-                                              upf.header.number_of_proj)
+    Q = OffsetVector([Matrix{NumericAugmentation{Float64,RealSpace}}(undef, upf.header.number_of_proj,
+                                                                     upf.header.number_of_proj)
                       for l in 0:(2upf.header.l_max)], 0:(2upf.header.l_max))
     for l in 0:(2upf.header.l_max), i in 1:(upf.header.number_of_proj),
         j in 1:(upf.header.number_of_proj)
         # Fill Q with zero vectors
-        Q[l][i, j] = zeros(length(upf.mesh.r))
+        r = ArbitraryMesh(upf.mesh.r, upf.mesh.rab)
+        f = zero(r)
+        Q[l][i, j] = NumericAugmentation(i, j, l, r, f)
     end
     for (Q_upf, Qfcoef_upf) in
         zip(upf.nonlocal.augmentation.qijs, upf.nonlocal.augmentation.qfcoefs)
@@ -92,8 +101,12 @@ end
             poly = Polynomial(qfcoef[:, l + 1])
             qij[1:ircut] = r[1:ircut] .^ (l + 2) .* poly.(r2[1:ircut])
 
-            Q[l][Q_upf.first_index, Q_upf.second_index] = qij
-            Q[l][Q_upf.second_index, Q_upf.first_index] = qij
+            n1 = Q_upf.first_index
+            n2 = Q_upf.second_index
+            r = ArbitraryMesh(upf.mesh.r[1:ircut], upf.mesh.rab[1:ircut])
+
+            Q[l][n1, n2] = NumericAugmentation(n1, n2, l, r, qij)
+            Q[l][n2, n1] = NumericAugmentation(n2, n1, l, r, qij)
         end
     end
     return Q
@@ -121,9 +134,9 @@ function _upf_construct_us_internal(upf::UpfFile)
     else
         error("q_with_l == false and nqf == 0, unsure what to do...")
     end
-    return UltrasoftPsP{Float64}(nc.identifier, nc.Zatom, nc.Zval, nc.lmax,
-                                 nc.r, nc.Vloc, nc.β, nc.D, nc.χ, Q, q,
-                                 nc.ρcore, nc.ρval)
+    return UltrasoftPsP{Float64,RealSpace}(nc.identifier, nc.Zatom, nc.Zval, nc.lmax,
+                                           nc.Vloc, nc.β, nc.D, nc.χ, Q, q,
+                                           nc.ρcore, nc.ρval)
 end
 
 is_norm_conserving(::UltrasoftPsP)::Bool = false
@@ -132,27 +145,71 @@ is_paw(::UltrasoftPsP)::Bool = false
 
 # #TODO test the augmentation functions
 # has_quantity(psp::UltrasoftPsP, ::AugmentationCoupling) = true
-# has_quantity(psp::UltrasoftPsP, ::AugmentationFunction) = true
+has_quantity(psp::UltrasoftPsP, ::AugmentationFunction) = true
 # get_quantity(psp::UltrasoftPsP, ::AugmentationCoupling, l) = psp.q[l]
 # get_quantity(psp::UltrasoftPsP, ::AugmentationCoupling, l, n) = psp.q[l][n, n]
 # get_quantity(psp::UltrasoftPsP, ::AugmentationCoupling, l, n, m) = psp.q[l][n, m]
-# get_quantity(psp::UltrasoftPsP, ::AugmentationFunction, l) = psp.Q[l]
-# get_quantity(psp::UltrasoftPsP, ::AugmentationFunction, l, n) = psp.Q[l][n,n]
-# get_quantity(psp::UltrasoftPsP, ::AugmentationFunction, l, n, m) = psp.Q[l][n,m]
+get_quantity(psp::UltrasoftPsP, ::AugmentationFunction) = psp.Q
+get_quantity(psp::UltrasoftPsP, ::AugmentationFunction, l) = psp.Q[l]
+get_quantity(psp::UltrasoftPsP, ::AugmentationFunction, l, n) = psp.Q[l][n, n]
+get_quantity(psp::UltrasoftPsP, ::AugmentationFunction, l, n, m) = psp.Q[l][n, m]
 
-# function cutoff_radius(psp::NumericPsP, quantity::AugmentationFunction, l, n, m; f=nothing,
-#                        tol=nothing)
-#     !has_quantity(psp, quantity) && return nothing
-#     f = get_quantity(psp, quantity, l, n, m)
-#     return psp.r[find_truncation_index(f, tol)]
-# end
+function hankel_transform(psp::UltrasoftPsP{T,S};
+                          qs::AbstractVector{TT}=range(; start=T(0), stop=T(30), length=3001),
+                          quadrature_method=Simpson(),
+                          local_potential_correction=CoulombCorrection(psp)
+                          )::UltrasoftPsP{T,FourierSpace} where {T<:Real,S<:RealSpace,TT<:Real}
+    n = maximum_mesh_length(psp)
+    work_weights = Vector{T}(undef, n)
+    work_integrand = Vector{TT}(undef, n)
+    work_f = Vector{T}(undef, n)
 
-# function psp_quantity_evaluator(::RealSpace, q::AugmentationFunction, psp::UltrasoftPsP, l,
-#                                 n, m)
-#     return build_interpolator_real(psp.Q[l][n, m], psp.r)
-# end
+    Vloc = hankel_transform(get_quantity(psp, LocalPotential()), local_potential_correction, qs,
+                            quadrature_method, work_weights, work_integrand, work_f)
+    β = map(get_quantity(psp, BetaProjector())) do βl
+        map(βl) do βln
+            return hankel_transform(βln, qs, quadrature_method, work_weights, work_integrand, work_f)
+        end
+    end
+    χ = map(get_quantity(psp, ChiProjector())) do χl
+        map(χl) do χln
+            return hankel_transform(χln, qs, quadrature_method, work_weights, work_integrand, work_f)
+        end
+    end
+    Q = map(get_quantity(psp, AugmentationFunction())) do Ql
+        map(Ql) do Qijl
+            return hankel_transform(Qijl, qs, quadrature_method, work_weights, work_integrand, work_f)
+        end
+    end
+    ρcore = hankel_transform(get_quantity(psp, CoreChargeDensity()), qs, quadrature_method, work_weights,
+                             work_integrand, work_f)
+    ρval = hankel_transform(get_quantity(psp, ValenceChargeDensity()), qs, quadrature_method, work_weights,
+                            work_integrand, work_f)
 
-# function psp_quantity_evaluator(::FourierSpace, q::AugmentationFunction, psp::UltrasoftPsP,
-#                                 l, n, m)
-#     return hankel_transform(psp.Q[l][n, m], l, psp.r, deriv(psp.r))
-# end
+    return UltrasoftPsP{TT,FourierSpace}(psp.identifier, psp.Zatom, psp.Zval, psp.lmax, Vloc, β, psp.D, χ, Q,
+                                         psp.q, ρcore, ρval)
+end
+
+function interpolate_onto(maximum_spacing::T,
+                          psp::UltrasoftPsP{T,S}) where {T<:Real,S<:EvaluationSpace}
+    Vloc = interpolate_onto(maximum_spacing, get_quantity(psp, LocalPotential()))
+    β = map(get_quantity(psp, BetaProjector())) do βl
+        map(βl) do βln
+            return interpolate_onto(maximum_spacing, βln)
+        end
+    end
+    χ = map(get_quantity(psp, ChiProjector())) do χl
+        map(χl) do χln
+            return interpolate_onto(maximum_spacing, χln)
+        end
+    end
+    Q = map(get_quantity(psp, AugmentationFunction())) do Ql
+        map(Ql) do Qijl
+            return interpolate_onto(maximum_spacing, Qijl)
+        end
+    end
+    ρcore = interpolate_onto(maximum_spacing, get_quantity(psp, CoreChargeDensity()))
+    ρval = interpolate_onto(maximum_spacing, get_quantity(psp, ValenceChargeDensity()))
+    return UltrasoftPsP{T,S}(psp.identifier, psp.Zatom, psp.Zval, psp.lmax, Vloc, β, psp.D, χ, Q, psp.q, ρcore,
+                             ρval)
+end

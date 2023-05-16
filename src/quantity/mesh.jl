@@ -133,9 +133,8 @@ function UniformMesh(x1::T, xn::T, n::Integer) where {T<:Real}
 end
 
 function Base.getindex(mesh::UniformMesh{T}, i::Integer)::T where {T}
-    # This check  is important but _very_ slow
-    # 1 < i <= mesh.n + 1 || throw(BoundsError(mesh, i))
-    # return mesh.b + mesh.a * (i - 1)
+    # Use a StepRangeLen{T} struct for evaluating linear meshes to avoid
+    # floating-point funkiness
     return mesh.x_range[i]
 end
 
