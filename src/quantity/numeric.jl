@@ -5,14 +5,13 @@ maximum_radius(q::NumericPsPQuantity) = maximum(q.r; init=0)
 extrema_radii(q::NumericPsPQuantity) = (minimum_radius(q), maximum_radius(q))
 
 hankel_transform(::Nothing, args...; kwargs...)::Nothing = nothing
-function hankel_transform(quantity::NumericPsPQuantity{T,RealSpace};
-                          qs::AbstractVector{TT}=range(; start=T(0), stop=T(30), length=3001),
-                          quadrature_method::QuadratureMethod=Simpson()) where {T<:Real,TT<:Real}
+function hankel_transform(quantity::NumericPsPQuantity{T,RealSpace},
+                          qs::AbstractVector{TT}=range(T(0), T(30, 3001)); kwargs...) where {T,TT<:Real}
     n = length(quantity.r)
     work_weights = Vector{T}(undef, n)
     work_integrand = Vector{TT}(undef, n)
     work_f = Vector{T}(undef, n)
-    return hankel_transform(quantity, qs, quadrature_method, work_weights, work_integrand, work_f)
+    return hankel_transform(quantity, qs, work_weights, work_integrand, work_f; kwargs...)
 end
 
 interpolate_onto(::Real, ::Nothing)::Nothing = nothing
@@ -52,35 +51,23 @@ function NumericLocalPotential(Zval::T, r::AbstractVector{T}, f::AbstractVector{
     return NumericLocalPotential{T,RealSpace}(Zval, r, f; kwargs...)
 end
 
-function hankel_transform(quantity::NumericLocalPotential{T,RealSpace};
-                          qs::AbstractVector{TT}=range(; start=T(0), stop=T(30), length=3001),
-                          quadrature_method::QuadratureMethod=Simpson(),
-                          correction::LocalPotentialCorrection{T,RealSpace}=ErfCoulombCorrection(quantity.Zval)) where {T<:Real,
-                                                                                                                        TT<:Real}
-    n = length(quantity.r)
-    work_weights = Vector{T}(undef, n)
-    work_integrand = Vector{TT}(undef, n)
-    work_f = Vector{T}(undef, n)
-    return hankel_transform(quantity, qs, quadrature_method, correction, work_weights, work_integrand, work_f)
-end
-
 function hankel_transform(quantity::NumericLocalPotential{T,RealSpace},
                           qs::AbstractVector{TT},
-                          quadrature_method::QuadratureMethod,
-                          correction_r::LocalPotentialCorrection{T,RealSpace},
                           work_weights::AbstractVector{T},
                           work_integrand::AbstractVector{TT},
-                          work_f::AbstractVector{T}) where {T<:Real,TT<:Real}
+                          work_f::AbstractVector{T};
+                          quadrature_method=Simpson(),
+                          local_potential_correction=ErfCoulombCorrection(quantity.Zval)) where {T<:Real,TT<:Real}
     mesh = quantity.r
     r = collect(mesh)
     f_r = quantity.f
-    work_f .= r .* f_r .- correction_r.(r)
+    work_f .= r .* f_r .- local_potential_correction.(r)
 
     work_weights = @view work_weights[eachindex(r)]
     work_integrand = @view work_integrand[eachindex(r)]
 
     integration_weights!(work_weights, mesh, quadrature_method)
-    correction_q = hankel_transform(correction_r)
+    correction_q = hankel_transform(local_potential_correction)
 
     f_q = map(qs) do q
         work_integrand .= work_f .* sin.(q .* r)
@@ -132,30 +119,13 @@ end
 
 function hankel_transform(quantity::NumericProjector{T,RealSpace},
                           qs::AbstractVector{TT},
-                          quadrature_method::QuadratureMethod,
                           work_weights::AbstractVector{T},
                           work_integrand::AbstractVector{TT},
-                          ::AbstractVector{T})::NumericProjector{TT,FourierSpace} where {T<:Real,TT<:Real}
-    n = quantity.n
-    l = quantity.l
-    j = TT(quantity.j)
-    mesh = quantity.r
-    r = collect(mesh)
-    r²f_r = quantity.f
+                          ::AbstractVector{T};
+                          kwargs...)::NumericProjector{TT,FourierSpace} where {T<:Real,TT<:Real}
+    f_q = hankel_transform(quantity.f, quantity.r, qs, work_weights, work_integrand, quantity.l; kwargs...)
 
-    work_weights = @view work_weights[eachindex(r)]
-    work_integrand = @view work_integrand[eachindex(r)]
-
-    integration_weights!(work_weights, mesh, quadrature_method)
-    jₗ = fast_sphericalbesselj(l)
-
-    f_q = map(qs) do q
-        work_integrand .= r²f_r .* jₗ.(q .* r)
-        integral = dot(work_weights, work_integrand)
-        return 4TT(π) * integral
-    end
-
-    return NumericProjector{TT,FourierSpace}(n, l, j, qs, f_q)
+    return NumericProjector{TT,FourierSpace}(quantity.n, quantity.l, quantity.j, qs, f_q)
 end
 
 function interpolate_onto(r::AbstractVector{T},
@@ -181,27 +151,11 @@ function NumericDensity(r::AbstractVector{T}, f::AbstractVector{T}; kwargs...) w
     return NumericDensity{T,RealSpace}(r, f; kwargs...)
 end
 
-function hankel_transform(quantity::NumericDensity{T,RealSpace},
-                          qs::AbstractVector{TT},
-                          quadrature_method::QuadratureMethod,
-                          work_weights::AbstractVector{T},
-                          work_integrand::AbstractVector{TT},
-                          ::AbstractVector{T})::NumericDensity{TT,FourierSpace} where {T<:Real,TT<:Real}
-    mesh = quantity.r
-    r = collect(mesh)
-    r²f_r = quantity.f
-
-    work_weights = @view work_weights[eachindex(r)]
-    work_integrand = @view work_integrand[eachindex(r)]
-
-    integration_weights!(work_weights, mesh, quadrature_method)
-
-    f_q = map(qs) do q
-        work_integrand .= r²f_r .* fast_sphericalbesselj0.(q .* r)
-        integral = dot(work_weights, work_integrand)
-        return 4TT(π) * integral
-    end
-
+function hankel_transform(quantity::NumericDensity{T,RealSpace}, qs::AbstractVector{TT},
+                          work_weights::AbstractVector{T}, work_integrand::AbstractVector{TT},
+                          ::AbstractVector{T};
+                          kwargs...)::NumericDensity{TT,FourierSpace} where {T<:Real,TT<:Real}
+    f_q = hankel_transform(quantity.f, quantity.r, qs, work_weights, work_integrand; kwargs...)
     return NumericDensity{TT,FourierSpace}(qs, f_q)
 end
 
@@ -234,31 +188,15 @@ end
 
 function hankel_transform(quantity::NumericAugmentation{T,RealSpace},
                           qs::AbstractVector{TT},
-                          quadrature_method::QuadratureMethod,
                           work_weights::AbstractVector{T},
                           work_integrand::AbstractVector{TT},
-                          work_f::AbstractVector{T})::NumericAugmentation{TT,
-                                                                          FourierSpace} where {T<:Real,TT<:Real}
-    n = quantity.n
-    m = quantity.m
-    l = quantity.l
-    mesh = quantity.r
-    r = collect(mesh)
-    work_f .= mesh .^ 2 .* quantity.f
+                          work_f::AbstractVector{T};
+                          kwargs...)::NumericAugmentation{TT,FourierSpace} where {T<:Real,TT<:Real}
+    work_f = @view work_f[eachindex(quantity.f)]
+    work_f .= quantity.r .^ 2 .* quantity.f
+    f_q = hankel_transform(quantity.f, quantity.r, qs, work_weights, work_integrand, quantity.l; kwargs...)
 
-    work_weights = @view work_weights[eachindex(r)]
-    work_integrand = @view work_integrand[eachindex(r)]
-
-    integration_weights!(work_weights, mesh, quadrature_method)
-    jₗ = fast_sphericalbesselj(l)
-
-    f_q = map(qs) do q
-        work_integrand .= work_f .* jₗ.(q .* r)
-        integral = dot(work_weights, work_integrand)
-        return 4TT(π) * integral
-    end
-
-    return NumericAugmentation{TT,FourierSpace}(n, m, l, qs, f_q)
+    return NumericAugmentation{TT,FourierSpace}(quantity.n, quantity.m, quantity.l, qs, f_q)
 end
 
 function interpolate_onto(r::AbstractVector{T},

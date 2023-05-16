@@ -34,6 +34,7 @@ using DocStringExtensions
 include("quantity/mesh.jl")
 include("common/quadrature.jl")
 include("common/fast_sphericalbesselj.jl")
+include("common/hankel_transform.jl")
 
 include("quantity/evaluation_space.jl")
 export CoulombCorrection

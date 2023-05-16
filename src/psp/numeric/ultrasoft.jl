@@ -144,47 +144,46 @@ is_ultrasoft(::UltrasoftPsP)::Bool = true
 is_paw(::UltrasoftPsP)::Bool = false
 
 # #TODO test the augmentation functions
-# has_quantity(psp::UltrasoftPsP, ::AugmentationCoupling) = true
+has_quantity(psp::UltrasoftPsP, ::AugmentationCoupling) = true
 has_quantity(psp::UltrasoftPsP, ::AugmentationFunction) = true
-# get_quantity(psp::UltrasoftPsP, ::AugmentationCoupling, l) = psp.q[l]
-# get_quantity(psp::UltrasoftPsP, ::AugmentationCoupling, l, n) = psp.q[l][n, n]
-# get_quantity(psp::UltrasoftPsP, ::AugmentationCoupling, l, n, m) = psp.q[l][n, m]
+get_quantity(psp::UltrasoftPsP, ::AugmentationCoupling, l) = psp.q[l]
+get_quantity(psp::UltrasoftPsP, ::AugmentationCoupling, l, n) = psp.q[l][n, n]
+get_quantity(psp::UltrasoftPsP, ::AugmentationCoupling, l, n, m) = psp.q[l][n, m]
 get_quantity(psp::UltrasoftPsP, ::AugmentationFunction) = psp.Q
 get_quantity(psp::UltrasoftPsP, ::AugmentationFunction, l) = psp.Q[l]
 get_quantity(psp::UltrasoftPsP, ::AugmentationFunction, l, n) = psp.Q[l][n, n]
 get_quantity(psp::UltrasoftPsP, ::AugmentationFunction, l, n, m) = psp.Q[l][n, m]
 
-function hankel_transform(psp::UltrasoftPsP{T,S};
-                          qs::AbstractVector{TT}=range(; start=T(0), stop=T(30), length=3001),
-                          quadrature_method=Simpson(),
-                          local_potential_correction=CoulombCorrection(psp)
+function hankel_transform(psp::UltrasoftPsP{T,S},
+                          qs::AbstractVector{TT}=range(; start=T(0), stop=T(30), length=3001);
+                          kwargs...
                           )::UltrasoftPsP{T,FourierSpace} where {T<:Real,S<:RealSpace,TT<:Real}
     n = maximum_mesh_length(psp)
     work_weights = Vector{T}(undef, n)
     work_integrand = Vector{TT}(undef, n)
     work_f = Vector{T}(undef, n)
 
-    Vloc = hankel_transform(get_quantity(psp, LocalPotential()), local_potential_correction, qs,
-                            quadrature_method, work_weights, work_integrand, work_f)
+    Vloc = hankel_transform(get_quantity(psp, LocalPotential()), qs, work_weights, work_integrand, work_f;
+                            kwargs...)
     β = map(get_quantity(psp, BetaProjector())) do βl
         map(βl) do βln
-            return hankel_transform(βln, qs, quadrature_method, work_weights, work_integrand, work_f)
+            return hankel_transform(βln, qs, work_weights, work_integrand, work_f; kwargs...)
         end
     end
     χ = map(get_quantity(psp, ChiProjector())) do χl
         map(χl) do χln
-            return hankel_transform(χln, qs, quadrature_method, work_weights, work_integrand, work_f)
+            return hankel_transform(χln, qs, work_weights, work_integrand, work_f; kwargs...)
         end
     end
     Q = map(get_quantity(psp, AugmentationFunction())) do Ql
         map(Ql) do Qijl
-            return hankel_transform(Qijl, qs, quadrature_method, work_weights, work_integrand, work_f)
+            return hankel_transform(Qijl, qs, work_weights, work_integrand, work_f; kwargs...)
         end
     end
-    ρcore = hankel_transform(get_quantity(psp, CoreChargeDensity()), qs, quadrature_method, work_weights,
-                             work_integrand, work_f)
-    ρval = hankel_transform(get_quantity(psp, ValenceChargeDensity()), qs, quadrature_method, work_weights,
-                            work_integrand, work_f)
+    ρcore = hankel_transform(get_quantity(psp, CoreChargeDensity()), qs, work_weights, work_integrand, work_f;
+                             kwargs...)
+    ρval = hankel_transform(get_quantity(psp, ValenceChargeDensity()), qs, work_weights, work_integrand, work_f;
+                            kwargs...)
 
     return UltrasoftPsP{TT,FourierSpace}(psp.identifier, psp.Zatom, psp.Zval, psp.lmax, Vloc, β, psp.D, χ, Q,
                                          psp.q, ρcore, ρval)
