@@ -18,3 +18,11 @@ get_quantity(psp::NumericPsP, q::ProjectorFlag, l, n) = get_quantity(psp, q, l)[
 function n_radials(psp::NumericPsP, quantity::ProjectorFlag, l)
     return length(get_quantity(psp, quantity, l))
 end
+
+function energy_correction(TT::Type{<:Real}, psp::NumericPsP{T,RealSpace}; kwargs...)::TT where {T}
+    return energy_correction(TT, get_quantity(psp, LocalPotential()), kwargs...)
+end
+
+function energy_correction(psp::NumericPsP{T,RealSpace}; kwargs...)::T where {T}
+    return energy_correction(get_quantity(psp, LocalPotential()); kwargs...)
+end

@@ -50,7 +50,7 @@ function _upf_construct_nc_internal(upf::UpfFile)
 
     Vloc_data = upf.local_ ./ 2  # Ry -> Ha
     Vloc_mesh = ArbitraryMesh(r[eachindex(Vloc_data)], dr[eachindex(Vloc_data)])
-    Vloc = NumericLocalPotential(Vloc_mesh, Vloc_data)
+    Vloc = NumericLocalPotential(Zval, Vloc_mesh, Vloc_data)
 
     # Indices in upf.nonlocal.betas for projectors at each angular momentum
     iβ_upf = map(0:lmax) do l
