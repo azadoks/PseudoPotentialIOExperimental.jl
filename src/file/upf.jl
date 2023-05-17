@@ -358,16 +358,16 @@ has_spin_orbit(file::UpfFile)::Bool = file.header.has_so
 has_core_density(file::UpfFile)::Bool = file.header.core_correction
 valence_charge(file::UpfFile) = file.header.z_valence
 max_angular_momentum(file::UpfFile)::Int = file.header.l_max
-# function n_radials(::NumericProjector, file::UpfFile, l::Int)::Int
-#     return count(beta -> beta.angular_momentum == l, file.nonlocal.betas)
-# end
-# function n_radials(::NumericState, file::UpfFile, l::Int)::Int
-#     return file.header.number_of_wfc == 0 ? 0 : count(chi -> chi.l == l, file.pswfc)
-# end
-has_quantity(::AbstractPsPQuantity, ::UpfFile) = false
-has_quantity(::NumericLocalPotential, ::UpfFile) = true
-has_quantity(::NumericProjector, ::UpfFile) = true
-# has_quantity(::BetaCoupling, ::UpfFile) = true
-# has_quantity(::NumericState, file::UpfFile) = !isnothing(file.pswfc)
-# has_quantity(::CoreChargeDensity, file::UpfFile) = !isnothing(file.nlcc)
-# has_quantity(::ValenceChargeDensity, file::UpfFile) = !isnothing(file.rhoatom)
+function n_radials(::BetaProjector, file::UpfFile, l::Int)::Int
+    return count(beta -> beta.angular_momentum == l, file.nonlocal.betas)
+end
+function n_radials(::ChiProjector, file::UpfFile, l::Int)::Int
+    return file.header.number_of_wfc == 0 ? 0 : count(chi -> chi.l == l, file.pswfc)
+end
+has_quantity(::PsPQuantityFlag, ::UpfFile) = false
+has_quantity(::LocalPotential, ::UpfFile) = true
+has_quantity(::BetaProjector, ::UpfFile) = true
+has_quantity(::BetaCoupling, ::UpfFile) = true
+has_quantity(::ChiProjector, file::UpfFile) = !isnothing(file.pswfc)
+has_quantity(::CoreChargeDensity, file::UpfFile) = !isnothing(file.nlcc)
+has_quantity(::ValenceChargeDensity, file::UpfFile) = !isnothing(file.rhoatom)

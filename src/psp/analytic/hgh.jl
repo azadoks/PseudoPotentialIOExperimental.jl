@@ -13,7 +13,6 @@ struct HghPsP{T<:Real,S<:EvaluationSpace} <: AnalyticPsP{T,S}
     Zval::Int
     "Maximum angular momentum"
     lmax::Int
-    "Radial cutoff for the local part of the pseudopotential"
     "Local part of the potential"
     Vloc::HghLocalPotential{T,S}
     "Nonlocal projectors β[l][n]"
@@ -41,9 +40,9 @@ function HghPsP(file::HghFile)
             return HghProjector(n, l, file.rp[l+1])
         end
     end
-    β = OffsetVector(β, 0:file.lmax)
+    β = OffsetVector(β, 0:file.lmax)  # Ha / √a₀
 
-    D = OffsetVector(file.h, 0:(file.lmax))
+    D = OffsetVector(file.h, 0:(file.lmax))  # 1 / Ha
 
     return HghPsP{Float64,RealSpace}(file.identifier, Zatom, Zval, file.lmax, Vloc, β, D)
 end
@@ -52,13 +51,13 @@ identifier(psp::HghPsP)::String = psp.identifier
 function element(psp::HghPsP)
     return isnothing(psp.Zatom) ? nothing : PeriodicTable.elements[Int(psp.Zatom)]
 end
+max_angular_momentum(psp::HghPsP)::Int = psp.lmax
+valence_charge(psp::HghPsP) = psp.Zval
+atomic_charge(psp::HghPsP) = psp.Zatom
 has_spin_orbit(::HghPsP)::Bool = false
 is_norm_conserving(::HghPsP)::Bool = true
 is_ultrasoft(::HghPsP)::Bool = false
 is_paw(::HghPsP)::Bool = false
-valence_charge(psp::HghPsP) = psp.Zval
-atomic_charge(psp::HghPsP) = psp.Zatom
-max_angular_momentum(psp::HghPsP)::Int = psp.lmax
 
 has_quantity(::HghPsP, ::PsPQuantityFlag) = false
 has_quantity(::HghPsP, ::LocalPotential) = true
@@ -69,11 +68,9 @@ get_quantity(psp::HghPsP, ::BetaCoupling) = psp.D
 get_quantity(psp::HghPsP, ::BetaCoupling, l) = psp.D[l]
 get_quantity(psp::HghPsP, ::BetaCoupling, l, n) = psp.D[l][n, n]
 get_quantity(psp::HghPsP, ::BetaCoupling, l, n, m) = psp.D[l][n, m]
-
 get_quantity(psp::HghPsP, ::BetaProjector) = psp.β
 get_quantity(psp::HghPsP, ::BetaProjector, l) = psp.β[l]
-get_quantity(psp::HghPsP, ::BetaProjector, n, l) = psp.β[l][n]
-
+get_quantity(psp::HghPsP, ::BetaProjector, l, n) = psp.β[l][n]
 get_quantity(psp::HghPsP, ::LocalPotential) = psp.Vloc
 
 n_radials(psp::HghPsP, ::BetaProjector, l::Int) = length(psp.β[l])
@@ -89,4 +86,12 @@ function hankel_transform(psp::HghPsP{T,RealSpace})::HghPsP{T,FourierSpace} wher
     end
 
     return HghPsP{T,FourierSpace}(psp.identifier, psp.Zatom, psp.Zval, psp.lmax, Vloc, β, psp.D)
+end
+
+function energy_correction(TT::Type{<:Real}, psp::HghPsP{T,RealSpace})::TT where {T}
+    return energy_correction(TT, get_quantity(psp, LocalPotential()))
+end
+
+function energy_correction(psp::HghPsP{T,RealSpace})::T where {T}
+    return energy_correction(T, get_quantity(psp, LocalPotential()))
 end

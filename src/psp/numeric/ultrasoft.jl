@@ -103,7 +103,7 @@ end
 
             n1 = Q_upf.first_index
             n2 = Q_upf.second_index
-            r = ArbitraryMesh(upf.mesh.r[1:ircut], upf.mesh.rab[1:ircut])
+            r = ArbitraryMesh(upf.mesh.r[eachindex(qij)], upf.mesh.rab[eachindex(qij)])
 
             Q[l][n1, n2] = NumericAugmentation(n1, n2, l, r, qij)
             Q[l][n2, n1] = NumericAugmentation(n2, n1, l, r, qij)
@@ -189,26 +189,26 @@ function hankel_transform(psp::UltrasoftPsP{T,S},
                                          psp.q, ρcore, ρval)
 end
 
-function interpolate_onto(maximum_spacing::T,
-                          psp::UltrasoftPsP{T,S}) where {T<:Real,S<:EvaluationSpace}
-    Vloc = interpolate_onto(maximum_spacing, get_quantity(psp, LocalPotential()))
+function interpolate_onto(psp::UltrasoftPsP{T,S},
+                          maximum_spacing::T) where {T<:Real,S<:EvaluationSpace}
+    Vloc = interpolate_onto(get_quantity(psp, LocalPotential()), maximum_spacing)
     β = map(get_quantity(psp, BetaProjector())) do βl
         map(βl) do βln
-            return interpolate_onto(maximum_spacing, βln)
+            return interpolate_onto(βln, maximum_spacing)
         end
     end
     χ = map(get_quantity(psp, ChiProjector())) do χl
         map(χl) do χln
-            return interpolate_onto(maximum_spacing, χln)
+            return interpolate_onto(χln, maximum_spacing)
         end
     end
     Q = map(get_quantity(psp, AugmentationFunction())) do Ql
         map(Ql) do Qijl
-            return interpolate_onto(maximum_spacing, Qijl)
+            return interpolate_onto(Qijl, maximum_spacing)
         end
     end
-    ρcore = interpolate_onto(maximum_spacing, get_quantity(psp, CoreChargeDensity()))
-    ρval = interpolate_onto(maximum_spacing, get_quantity(psp, ValenceChargeDensity()))
+    ρcore = interpolate_onto(get_quantity(psp, CoreChargeDensity()), maximum_spacing)
+    ρval = interpolate_onto(get_quantity(psp, ValenceChargeDensity()), maximum_spacing)
     return UltrasoftPsP{T,S}(psp.identifier, psp.Zatom, psp.Zval, psp.lmax, Vloc, β, psp.D, χ, Q, psp.q, ρcore,
                              ρval)
 end

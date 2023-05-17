@@ -97,7 +97,7 @@ end
 
 function get_pseudos_data(psps)
     return OrderedDict{String,Any}("Element" => map(el -> el.symbol,
-                                                    PseudoPotentialIO.element.(psps)),
+                                                    PseudoPotentialIOExperimental.element.(psps)),
                                    "Filename" => identifier.(psps),
                                    "Valence Charge" => valence_charge.(psps),
                                    "NLCC" => has_core_density.(psps),

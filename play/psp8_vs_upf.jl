@@ -15,6 +15,69 @@ begin
     using BSplineKit
 end
 
+begin
+    hgh_file = load_psp_file("hgh_lda_hgh", "si-q4.hgh")
+    hgh = load_psp(hgh_file)
+    hgh_q = hankel_transform(hgh)
+    upf_file = load_psp_file("hgh_lda_upf", "Si.pz-hgh.UPF")
+    upf = load_psp(upf_file)
+    upf_q = hankel_transform(upf)
+
+    l = 0
+
+    let
+        fig = Figure()
+        ax = Axis(fig[1,1])
+        for n in 1:n_radials(upf, BetaProjector(), l)
+            # rgrid = upf.β[l][n].r
+            # lines!(ax, rgrid, rgrid.^2 .* hgh.β[l][n].(rgrid) .* 2, color=:green)
+            # lines!(ax, rgrid, upf.β[l][n].(rgrid), color=:blue)
+            lines!(ax, qgrid, hgh_q.β[l][n].(qgrid) .* 2, linestyle=:solid)
+            lines!(ax, qgrid, upf_q.β[l][n].(qgrid), linestyle=:dash)
+        end
+        fig
+    end
+end
+
+
+begin
+    psp8_file = load_psp_file("pd_nc_sr_pbe_standard_0.4.1_psp8", "Li.psp8")
+    psp8 = load_psp(psp8_file)
+    upf_file = load_psp_file("pd_nc_sr_pbe_standard_0.4.1_upf", "Li.upf")
+    upf = load_psp(upf_file)
+
+    l = 1
+
+    let
+        fig = Figure()
+        ax = Axis(fig[1,1])
+        for n in 1:n_radials(upf, BetaProjector(), l)
+            rgrid = 0.0:0.01:min(maximum_radius(psp8.β[l][n]), maximum_radius(upf.β[l][n]))
+            lines!(ax, rgrid, psp8.β[l][n].(rgrid))
+            lines!(ax, rgrid, upf.β[l][n].(rgrid))
+        end
+
+        ax = Axis(fig[2,1])
+        for n in 1:n_radials(upf, BetaProjector(), l)
+            rgrid = 0.0:0.01:min(maximum_radius(psp8.β[l][n]), maximum_radius(upf.β[l][n]))
+            lines!(ax, rgrid, psp8.β[l][n].(rgrid) .- upf.β[l][n].(rgrid))
+        end
+        fig
+    end
+end
+
+let
+    fig = Figure()
+    ax = Axis(fig[1,1], title="ρcore")
+    lines!(ax, upf.ρcore.r, upf.ρcore.f)
+    lines!(ax, psp8.ρcore.r, psp8.ρcore.f)
+    ax = Axis(fig[2,1], title="ρval")
+    lines!(ax, upf.ρval.r, upf.ρval.f)
+    lines!(ax, psp8.ρval.r, psp8.ρval.f)
+    fig
+end
+
+
 let
     upf_file = load_psp_file("pd_nc_sr_pbe_standard_0.4.1_upf", "Si.upf")
     upf = load_psp(upf_file)
@@ -54,7 +117,7 @@ begin
     fine_qgrid = range(0, 10, 100_000_000)
     Vloc_fine_qgrid = similar(fine_qgrid)
     @time let
-        upf_real_splined = interpolate_onto(maximum_spacing, upf_real)
+        upf_real_splined = interpolate_onto(upf_real, maximum_spacing)
 
         upf_splined_fourier = hankel_transform(
             upf_real_splined;

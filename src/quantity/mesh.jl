@@ -6,7 +6,7 @@ function RadialMesh(x::AbstractVector{T}) where {T}
         all(mesh .≈ x) && return mesh
     end
 
-    error("Could not construct a known mesh type which matches input data.")
+    return error("Could not construct a known mesh type which matches input data.")
 end
 
 function RadialMesh(x::AbstractVector{T}, dx::AbstractVector{T}) where {T}
@@ -15,7 +15,7 @@ function RadialMesh(x::AbstractVector{T}, dx::AbstractVector{T}) where {T}
         all(mesh .≈ x) && all(deriv(mesh) .≈ dx) && return mesh
     end
 
-    error("Could not construct a known mesh type which matches input data.")
+    return error("Could not construct a known mesh type which matches input data.")
 end
 
 function RadialMesh(x::StepRangeLen)
@@ -29,16 +29,16 @@ Base.lastindex(mesh::RadialMesh) = mesh.n
 Base.similar(mesh::RadialMesh{T}) where {T} = Vector{T}(undef, mesh.n)
 Base.similar(mesh::RadialMesh, ::Type{S}) where {S} = Vector{S}(undef, mesh.n)
 Base.eachindex(mesh::RadialMesh) = Base.OneTo(mesh.n)
-Base.iterate(mesh::RadialMesh, state=1) = state > mesh.n ? nothing : (mesh[state], state+1)
+Base.iterate(mesh::RadialMesh, state=1) = state > mesh.n ? nothing : (mesh[state], state + 1)
 Base.eltype(::Type{<:RadialMesh{T}}) where {T} = T
 Base.summary(io::IO, mesh::RadialMesh{T}) where {T} = print(io, "$(mesh.n)-element $(typeof(mesh))")
 
 function Base.getindex(mesh::RadialMesh{T}, i::AbstractRange)::Vector{T} where {T}
-    map(Base.Fix1(getindex, mesh), i)
+    return map(Base.Fix1(getindex, mesh), i)
 end
 
-function Base.getindex(mesh::RadialMesh{T}, ::Colon)::Vector{T} where{T}
-    Base.getindex(mesh, eachindex(mesh))
+function Base.getindex(mesh::RadialMesh{T}, ::Colon)::Vector{T} where {T}
+    return Base.getindex(mesh, eachindex(mesh))
 end
 
 function (mesh::RadialMesh{T})(i::Integer)::T where {T}
@@ -46,7 +46,7 @@ function (mesh::RadialMesh{T})(i::Integer)::T where {T}
 end
 
 function Base.diff(mesh::RadialMesh{T}) where {T}
-    return map(Base.Fix1(diff, mesh), 1:mesh.n-1)
+    return map(Base.Fix1(diff, mesh), 1:(mesh.n - 1))
 end
 
 function Base.diff(mesh::RadialMesh{T}, i::AbstractUnitRange) where {T}
@@ -126,7 +126,7 @@ function UniformMesh(x1::T, xn::T, n::Integer) where {T<:Real}
     a = (xn - x1) / (n - 1)
     b = x1
 
-    x_range = range(start=x1, stop=xn, length=n)
+    x_range = range(; start=x1, stop=xn, length=n)
 
     M = promote_type(typeof(a), typeof(b))
     return UniformMesh{M}(a, b, x1, xn, n, x_range)
@@ -139,7 +139,7 @@ function Base.getindex(mesh::UniformMesh{T}, i::Integer)::T where {T}
 end
 
 function Base.diff(mesh::UniformMesh{T}, i::Integer)::T where {T}
-    0 < i < mesh.n || throw(BoundsError(mesh, i+1))
+    0 < i < mesh.n || throw(BoundsError(mesh, i + 1))
     return mesh.a
 end
 
@@ -151,9 +151,8 @@ end
 abstract type LogMesh{T} <: RadialMesh{T} end
 
 function LogMesh(x::AbstractVector)
-    iszero(first(x)) ? LogMeshWithZero(x) : LogMeshWithoutZero(x)
+    return iszero(first(x)) ? LogMeshWithZero(x) : LogMeshWithoutZero(x)
 end
-
 
 # r(i) = b exp(a * (i - 1))
 # Δr(i) = r(i + 1) - r(i) = b exp(a * i) - b exp(a * (i - 1))
@@ -189,7 +188,7 @@ function Base.getindex(mesh::LogMeshWithoutZero{T}, i::Integer)::T where {T}
 end
 
 function Base.diff(mesh::LogMeshWithoutZero{T}, i::Integer)::T where {T}
-    0 < i < mesh.n || throw(BoundsError(mesh, i+1))
+    0 < i < mesh.n || throw(BoundsError(mesh, i + 1))
     return mesh.b * (exp(mesh.a * i) - exp(mesh.a * (i - 1)))
 end
 
@@ -197,7 +196,6 @@ function deriv(mesh::LogMeshWithoutZero{T}, i::Integer)::T where {T}
     1 <= i <= mesh.n || throw(BoundsError(mesh, i))
     return mesh.a * mesh.b * exp(mesh.a * (i - 1))
 end
-
 
 # r(i) = b [exp(a * (i - 1)) - 1]
 # Δr(i) = r(i + 1) - r(i) = b [exp(a * i) - 1] - b [exp(a * (i - 1)) - 1]
@@ -214,7 +212,7 @@ end
 function LogMeshWithZero(x::AbstractVector)
     iszero(first(x)) || throw(ArgumentError("The first element of x must be zero"))
     length(x) >= 3 || throw(ArgumentError("x must have at least 3 elements"))
-    return LogMeshWithZero(x[begin+1], x[begin+2], length(x))
+    return LogMeshWithZero(x[begin + 1], x[begin + 2], length(x))
 end
 
 function LogMeshWithZero(x2::T, x3::T, n::Integer) where {T}
@@ -233,7 +231,7 @@ function Base.getindex(mesh::LogMeshWithZero{T}, i::Integer)::T where {T}
 end
 
 function Base.diff(mesh::LogMeshWithZero{T}, i::Integer)::T where {T}
-    0 < i < mesh.n || throw(BoundsError(mesh, i+1))
+    0 < i < mesh.n || throw(BoundsError(mesh, i + 1))
     return mesh.b * (exp(mesh.a * i) - exp(mesh.a * (i - 1)))
 end
 

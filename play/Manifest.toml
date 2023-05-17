@@ -2,7 +2,7 @@
 
 julia_version = "1.9.0"
 manifest_format = "2.0"
-project_hash = "a95ad31320a1943f6c50abda5df3b7e0d63aaadc"
+project_hash = "51d0997c23f5ab061984e0df433733181bc4911c"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -957,7 +957,7 @@ uuid = "92933f4c-e287-5a05-a399-4b506db050ca"
 version = "1.7.2"
 
 [[deps.PseudoPotentialIOExperimental]]
-deps = ["Artifacts", "BSplineKit", "Bessels", "CairoMakie", "CubicSplines", "DocStringExtensions", "EzXML", "Interpolations", "LazyArtifacts", "LinearAlgebra", "OffsetArrays", "OrderedCollections", "PeriodicTable", "Polynomials", "PrettyTables", "Printf", "SHA", "SpecialFunctions", "Statistics"]
+deps = ["Artifacts", "BSplineKit", "Bessels", "DocStringExtensions", "EzXML", "LazyArtifacts", "LinearAlgebra", "OffsetArrays", "OrderedCollections", "PeriodicTable", "Polynomials", "PrettyTables", "Printf", "SHA", "SpecialFunctions", "Statistics"]
 path = ".."
 uuid = "3c1e8497-ccc6-4bf7-b29e-53e04e06307e"
 version = "0.1.0"

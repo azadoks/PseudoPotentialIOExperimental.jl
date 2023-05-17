@@ -9,7 +9,8 @@ function (Vloc::HghLocalPotential{T,S})(r::TT) where {T<:Real,S<:RealSpace,TT<:R
     r::TT += iszero(r) ? eps(TT) : zero(TT)  # quick hack for the division by zero below
     rr::TT = r / Vloc.rloc
     cloc = Vloc.cloc
-    return -Vloc.Zval / r * erf(rr / sqrt(TT(2))) + exp(-rr^2 / 2) * (cloc[1] + cloc[2] * rr^2 + cloc[3] * rr^4 + cloc[4] * rr^6)
+    return -Vloc.Zval / r * erf(rr / sqrt(TT(2))) +
+           exp(-rr^2 / 2) * (cloc[1] + cloc[2] * rr^2 + cloc[3] * rr^4 + cloc[4] * rr^6)
 end
 
 function hankel_transform(Vloc::HghLocalPotential{T,S}) where {T<:Real,S<:RealSpace}
@@ -22,7 +23,8 @@ can be brought to the form ``Q(t) / (t^2 exp(t^2 / 2))``
 where ``x = r_\text{loc} q`` and `Q`
 is a polynomial of at most degree 8. This function returns `Q`.
 """
-@inline function _local_potential_polynomial_fourier(Vloc::HghLocalPotential{T,S}, x::TT) where {T<:Real,S<:FourierSpace,TT<:Real}
+@inline function _local_potential_polynomial_fourier(Vloc::HghLocalPotential{T,S},
+                                                     x::TT) where {T<:Real,S<:FourierSpace,TT<:Real}
     rloc::TT = Vloc.rloc
     Zval::TT = Vloc.Zval
 
@@ -41,7 +43,6 @@ function (Vloc::HghLocalPotential{T,S})(q::TT) where {T<:Real,S<:FourierSpace,TT
     x::TT = q * Vloc.rloc
     return _local_potential_polynomial_fourier(Vloc, x) * exp(-x^2 / 2) / x^2
 end
-
 
 struct HghProjector{T<:Real,S<:EvaluationSpace} <: AnalyticalProjector{T,S}
     n::Int
@@ -71,7 +72,8 @@ The nonlocal projectors of a HGH pseudopotentials in reciprocal space
 can be brought to the form ``Q(t) e^{-t^2 / 2}`` where ``t = r_l q``
 and `Q` is a polynomial. This function returns `Q`.
 """
-@inline function _beta_projector_polynomial_fourier(β::HghProjector{T,S}, x::TT) where {T<:Real,S<:FourierSpace,TT<:Real}
+@inline function _beta_projector_polynomial_fourier(β::HghProjector{T,S},
+                                                    x::TT) where {T<:Real,S<:FourierSpace,TT<:Real}
     n = β.n
     l = β.l
     rnl::TT = β.rnl
@@ -96,7 +98,24 @@ and `Q` is a polynomial. This function returns `Q`.
     throw(ArgumentError("Not implemented for l=$l and i=$n"))
 end
 
-function(β::HghProjector{T,S})(q::TT) where {T<:Real,S<:FourierSpace,TT<:Real}
+function (β::HghProjector{T,S})(q::TT) where {T<:Real,S<:FourierSpace,TT<:Real}
     x::TT = q * β.rnl
     return _beta_projector_polynomial_fourier(β, x) * exp(-x^2 / TT(2))
+end
+
+function energy_correction(TT::Type{<:Real}, Vloc::HghLocalPotential{T,RealSpace})::TT where {T}
+    # By construction we need to compute the DC component of the difference
+    # of the Coulomb potential (-Z/G^2 in Fourier space) and the pseudopotential
+    # i.e. -4πZ/(ΔG)^2 -  eval_psp_local_fourier(psp, ΔG) for ΔG → 0. This is:
+    cloc_coeffs = [1, 3, 15, 105]
+    difference_DC = (TT(Vloc.Zval) * TT(Vloc.rloc)^2 / 2 +
+                     sqrt(TT(π) / 2) * TT(Vloc.rloc)^3 * TT(sum(cloc_coeffs .* Vloc.cloc)))
+
+    # Multiply by number of electrons and 4π (spherical Hankel prefactor)
+    # to get energy per unit cell
+    return 4TT(π) * difference_DC
+end
+
+function energy_correction(Vloc::HghLocalPotential{T,RealSpace})::T where {T}
+    return energy_correction(T, Vloc)
 end

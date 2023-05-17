@@ -1,3 +1,5 @@
+# TODO: interpolate_onto and hankel_transform are heavily duplicated
+
 abstract type NumericPsPQuantity{T<:Real,S<:EvaluationSpace} <: AbstractPsPQuantity end
 
 minimum_radius(q::NumericPsPQuantity) = minimum(q.r; init=Inf)
@@ -14,12 +16,11 @@ function hankel_transform(quantity::NumericPsPQuantity{T,RealSpace},
     return hankel_transform(quantity, qs, work_weights, work_integrand, work_f; kwargs...)
 end
 
-interpolate_onto(::Real, ::Nothing)::Nothing = nothing
-function interpolate_onto(maximum_spacing::T,
-                          q::NumericPsPQuantity{T,S})::NumericPsPQuantity{T,
-                                                                          S} where {T<:Real,S<:EvaluationSpace}
+interpolate_onto(::Nothing, ::Any)::Nothing = nothing
+function interpolate_onto(q::NumericPsPQuantity{T,S},
+                          maximum_spacing::T)::NumericPsPQuantity{T,S} where {T<:Real,S<:EvaluationSpace}
     r = UniformMesh(extrema_radii(q)..., maximum_spacing)
-    return interpolate_onto(r, q)
+    return interpolate_onto(q, r)
 end
 
 function (quantity::NumericPsPQuantity{T,S})(x::TT)::TT where {T<:Real,S<:EvaluationSpace,TT<:Real}
@@ -78,16 +79,16 @@ function hankel_transform(quantity::NumericLocalPotential{T,RealSpace},
     return NumericLocalPotential{TT,FourierSpace}(quantity.Zval, qs, f_q)
 end
 
-function interpolate_onto(r::AbstractVector{T},
-                          Vloc_r::NumericLocalPotential{T,S}) where {T<:Real,S<:EvaluationSpace}
+function interpolate_onto(Vloc_r::NumericLocalPotential{T,S},
+                          r::AbstractVector{T}) where {T<:Real,S<:EvaluationSpace}
     f = Vloc_r.(r)
-    return NumericLocalPotential{T,S}(r, f, Vloc_r.itp)
+    return NumericLocalPotential{T,S}(Vloc_r.Zval, r, f, Vloc_r.itp)
 end
 
 function energy_correction(TT::Type{<:Real}, Vloc::NumericLocalPotential{T,RealSpace};
                            quadrature_method::QuadratureMethod=Simpson(),
-                           corr::LocalPotentialCorrection{T,RealSpace}=ErfCoulombCorrection(Vloc.Zval))::TT where {T<:Real}
-    integrand = Vloc.r .* Vloc.f .- corr.(Vloc.r)
+                           kwargs...)::TT where {T<:Real}
+    integrand = Vloc.r .* (Vloc.r .* Vloc.f .+ Vloc.Zval)
     weights = integration_weights(Vloc.r, quadrature_method)
     return 4TT(π) * dot(weights, integrand)
 end
@@ -128,8 +129,8 @@ function hankel_transform(quantity::NumericProjector{T,RealSpace},
     return NumericProjector{TT,FourierSpace}(quantity.n, quantity.l, quantity.j, qs, f_q)
 end
 
-function interpolate_onto(r::AbstractVector{T},
-                          quantity::NumericProjector{T,S}) where {T<:Real,S<:EvaluationSpace}
+function interpolate_onto(quantity::NumericProjector{T,S},
+                          r::AbstractVector{T}) where {T<:Real,S<:EvaluationSpace}
     f = quantity.(r)
     return NumericProjector{T,S}(quantity.n, quantity.l, quantity.j, r, f, quantity.itp)
 end
@@ -159,8 +160,8 @@ function hankel_transform(quantity::NumericDensity{T,RealSpace}, qs::AbstractVec
     return NumericDensity{TT,FourierSpace}(qs, f_q)
 end
 
-function interpolate_onto(r::AbstractVector{T},
-                          quantity::NumericDensity{T,S}) where {T<:Real,S<:EvaluationSpace}
+function interpolate_onto(quantity::NumericDensity{T,S},
+                          r::AbstractVector{T}) where {T<:Real,S<:EvaluationSpace}
     f = quantity.(r)
     return NumericDensity{T,S}(r, f, quantity.itp)
 end
@@ -199,8 +200,8 @@ function hankel_transform(quantity::NumericAugmentation{T,RealSpace},
     return NumericAugmentation{TT,FourierSpace}(quantity.n, quantity.m, quantity.l, qs, f_q)
 end
 
-function interpolate_onto(r::AbstractVector{T},
-                          quantity::NumericAugmentation{T,S}) where {T<:Real,S<:EvaluationSpace}
+function interpolate_onto(quantity::NumericAugmentation{T,S},
+                          r::AbstractVector{T}) where {T<:Real,S<:EvaluationSpace}
     f = quantity.(r)
     return NumericAugmentation{T,S}(quantity.n, quantity.m, quantity.l, r, f, quantity.itp)
 end

@@ -72,25 +72,25 @@ function _upf_construct_nc_internal(upf::UpfFile)
     # numerical stability.
     β = map(0:lmax) do l
         map(iβ_upf[l]) do n
-            βln_data = upf.nonlocal.betas[n].beta ./ 2  # Ry -> Ha
+            βln_data = upf.nonlocal.betas[n].beta
 
             ir_cut = upf.nonlocal.betas[n].cutoff_radius_index
             ir_cut = isnothing(ir_cut) ? length(βln) : ir_cut
 
-            βln_data = βln_data[1:ir_cut] .* r[1:ir_cut] # rβln -> r²βln
+            βln_data = βln_data[1:ir_cut] .* r[1:ir_cut]  # rβln -> r²βln
             βln_mesh = ArbitraryMesh(r[eachindex(βln_data)], dr[eachindex(βln_data)])
 
             return NumericProjector(n, l, 0.0, βln_mesh, βln_data)
         end
     end
-    β = OffsetVector(β, 0:lmax)
+    β = OffsetVector(β, 0:lmax)  # Units are 1/√a₀ * a₀²
 
     # Extract the blocks from `upf.nonlocal.dij` corresponding to each angular momentum
     D = map(1:(length(cumul_nβ) - 1)) do i
         return collect(upf.nonlocal.dij[(cumul_nβ[i] + 1):cumul_nβ[i + 1],
                                         (cumul_nβ[i] + 1):cumul_nβ[i + 1]])
     end
-    D = OffsetVector(D, 0:lmax) .* 2  # 1/Ry -> 1/Ha
+    D = OffsetVector(D, 0:lmax) ./ 2  # Ry -> Ha
 
     # UPFs store the pseudo-atomic valence charge density with a prefactor of 4πr².
     # For consistency, we remove the 4π prefactor.
@@ -131,7 +131,7 @@ function _upf_construct_nc_internal(upf::UpfFile)
         end
         χ = OffsetVector(χ, 0:lmax)
     else
-        χ = OffsetVector([NumericProjector[] for _ in 0:lmax])
+        χ = OffsetVector([NumericProjector[] for _ in 0:lmax], 0:lmax)
     end
 
     return NormConservingPsP{Float64,RealSpace}(upf.identifier, Zatom, Zval, lmax, Vloc, β, D, χ, ρcore, ρval)
@@ -148,20 +148,21 @@ function NormConservingPsP(psp8::Psp8File)
 
     r = ArbitraryMesh(psp8.rgrid)
 
-    Vloc = NumericLocalPotential(r, psp8.v_local)
+    Vloc = NumericLocalPotential(Zval, r, psp8.v_local)
 
-    # PSP8s store the projectors without any prefactor, so we multiply by r² for consitency
+    # PSP8s store the projectors multiplied by the radial grid, so we multiply again by r
+    # (to get r²β) for consistency.
     β = map(0:lmax) do l
         map(eachindex(psp8.projectors[l + 1])) do n
             βln_data = psp8.projectors[l + 1][n]
-            βln_data = βln_data .* r .^ 2
+            βln_data = βln_data .* r  # rβln -> r²βln
             βln = NumericProjector(n, l, 0.0, r, βln_data)
             return βln
         end
     end
-    β = OffsetVector(β, 0:lmax)
+    β = OffsetVector(β, 0:lmax)  # Units are 1/√a₀ * a₀²
 
-    D = OffsetVector(map(l -> diagm(psp8.ekb[l + 1]), 0:lmax), 0:lmax)
+    D = OffsetVector(map(l -> diagm(psp8.ekb[l + 1]), 0:lmax), 0:lmax)  # Units are 1/Ha
     χ = OffsetVector([NumericProjector[] for _ in 0:lmax], 0:lmax)  # PSP8 doesn't support chi-functions
     # PSP8s store the core charge density with a prefactor of 4π, so we remove it and
     # multiply by r² for consistency.
@@ -179,6 +180,7 @@ function maximum_mesh_length(psp::NumericPsP)
     return length(get_quantity(psp, LocalPotential()).f)
 end
 
+# TODO: Mostly duplicated in UltrasoftPsP
 function hankel_transform(psp::NormConservingPsP{T,S},
                           qs::AbstractVector{TT}=range(; start=T(0), stop=T(30), length=3001);
                           kwargs...)::NormConservingPsP{T,FourierSpace} where {T<:Real,S<:RealSpace,TT<:Real}
@@ -208,20 +210,19 @@ function hankel_transform(psp::NormConservingPsP{T,S},
                                               ρcore, ρval)
 end
 
-function interpolate_onto(maximum_spacing::T,
-                          psp::NormConservingPsP{T,S}) where {T<:Real,S<:EvaluationSpace}
-    Vloc = interpolate_onto(maximum_spacing, get_quantity(psp, LocalPotential()))
+function interpolate_onto(psp::NormConservingPsP{T,S}, dest::Union{T,RadialMesh{T}}) where {T<:Real,S<:EvaluationSpace}
+    Vloc = interpolate_onto(get_quantity(psp, LocalPotential()), dest)
     β = map(get_quantity(psp, BetaProjector())) do βl
         map(βl) do βln
-            return interpolate_onto(maximum_spacing, βln)
+            return interpolate_onto(βln, dest)
         end
     end
     χ = map(get_quantity(psp, ChiProjector())) do χl
         map(χl) do χln
-            return interpolate_onto(maximum_spacing, χln)
+            return interpolate_onto(χln, dest)
         end
     end
-    ρcore = interpolate_onto(maximum_spacing, get_quantity(psp, CoreChargeDensity()))
-    ρval = interpolate_onto(maximum_spacing, get_quantity(psp, ValenceChargeDensity()))
+    ρcore = interpolate_onto(get_quantity(psp, CoreChargeDensity()), dest)
+    ρval = interpolate_onto(get_quantity(psp, ValenceChargeDensity()), dest)
     return NormConservingPsP{T,S}(psp.identifier, psp.Zatom, psp.Zval, psp.lmax, Vloc, β, psp.D, χ, ρcore, ρval)
 end

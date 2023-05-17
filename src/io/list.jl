@@ -3,7 +3,7 @@ List all known pseudopotential families with additional information about the nu
 format(s) of the pseudopotentials within if requested (slow!).
 """
 function list_families()
-    artifacts_toml_path = Artifacts.find_artifacts_toml(pathof(PseudoPotentialIO))
+    artifacts_toml_path = Artifacts.find_artifacts_toml(pathof(PseudoPotentialIOExperimental))
     artifacts = Artifacts.load_artifacts_toml(artifacts_toml_path)
     return collect(keys(artifacts))
 end

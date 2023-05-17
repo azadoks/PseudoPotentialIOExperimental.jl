@@ -1,4 +1,6 @@
 abstract type LocalPotentialCorrection{T,S} end
+Base.Broadcast.broadcastable(corr::LocalPotentialCorrection) = Ref(corr)
+
 
 struct CoulombCorrection{T<:Real,S<:EvaluationSpace} <: LocalPotentialCorrection{T,S}
     Z::T

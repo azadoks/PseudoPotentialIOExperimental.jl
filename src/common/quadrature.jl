@@ -186,16 +186,20 @@ mesh points `Δx`.
 struct QESimpson <: QuadratureMethod end
 
 function integration_weights!(weights::AbstractVector, mesh::RadialMesh, ::QESimpson)
-    i = (firstindex(weights) + 1):(lastindex(weights) - 1)
-    weights[i] .= 2 / 3 * abs.(mod.(i, 2) .- 2) .* deriv.(Ref(mesh), i)
-    if mod(length(weights), 2) == 1
-        weights[begin] = 1 / 3 * deriv(mesh, 1)
-        weights[end] = 1 / 3 * deriv(mesh, mesh.n - 1)
-    else
-        weights[begin] = 1 / 3 * deriv(mesh, 1)
-        weights[end - 1] = 1 / 3 * deriv(mesh, mesh.n - 2)
+    weights .= zero(eltype(weights))
+    n = length(mesh)
+    for i in 2:(n - 1)
+        fct = abs(mod(i, 2) - 2) * 2
+        weights[i] = fct * deriv(mesh, i)
     end
-    return weights
+    if mod(n, 2) == 1
+        weights[1] = deriv(mesh, 1)
+        weights[n] = deriv(mesh, n)
+    else
+        weights[1] = deriv(mesh, 1)
+        weights[n-1] = -deriv(mesh, n - 1)
+    end
+    weights .*= 1 / 3
 end
 
 

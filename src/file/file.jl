@@ -27,10 +27,10 @@ Maximum angular momentum channel in the local part of the pseudopotential.
 """
 function max_angular_momentum(file::PsPFile) end
 
-# """
-# Number of radial functions of the given quantity contained in the pseudopotential file.
-# """
-# function n_radials(::AbstractProjector, file::PsPFile, l) end
+"""
+Number of radial functions of the given quantity contained in the pseudopotential file.
+"""
+function n_radials(::ProjectorFlag, file::PsPFile, l) end
 
 """
 Pseudo-atomic valence charge.
@@ -72,21 +72,21 @@ Type of relativistic treatment (fully relativistic or scalar-relativistic).
 """
 relativistic_treatment(file::PsPFile)::Symbol = has_spin_orbit(file) ? :full : :scalar
 
-# function n_radials(q::AbstractProjector, file::PsPFile)
-#     return sum(l -> n_radials(q, file, l), 0:max_angular_momentum(file); init=0)
-# end
+function n_radials(q::ProjectorFlag, file::PsPFile)
+    return sum(l -> n_radials(q, file, l), 0:max_angular_momentum(file); init=0)
+end
 
-# function n_angulars(q::AbstractProjector, file::PsPFile, l)
-#     return n_radials(q, file, l) * (2l + 1)
-# end
+function n_angulars(q::ProjectorFlag, file::PsPFile, l)
+    return n_radials(q, file, l) * (2l + 1)
+end
 
-# """
-# Number of angular parts of the Kleinman-Bylander projectors at all angular momenta up
-# to the maximum angular momentum channel.
-# """
-# function n_angulars(q::AbstractProjector, file::PsPFile)
-#     return sum(l -> n_angulars(q, file, l), 0:max_angular_momentum(file); init=0)
-# end
+"""
+Number of angular parts of the Kleinman-Bylander projectors at all angular momenta up
+to the maximum angular momentum channel.
+"""
+function n_angulars(q::ProjectorFlag, file::PsPFile)
+    return sum(l -> n_angulars(q, file, l), 0:max_angular_momentum(file); init=0)
+end
 
 Base.Broadcast.broadcastable(file::PsPFile) = Ref(file)
 
@@ -107,8 +107,8 @@ function Base.show(io::IO, ::MIME"text/plain", file::PsPFile)
     @printf "%032s: %s\n" "element" element(file)
     @printf "%032s: %f\n" "valence charge" valence_charge(file)
     @printf "%032s: %s\n" "relativistic treatment" relativistic_treatment(file)
-    # @printf "%032s: %s\n" "non-linear core correction" has_quantity(CoreChargeDensity(), file)
+    @printf "%032s: %s\n" "non-linear core correction" has_quantity(CoreChargeDensity(), file)
     @printf "%032s: %d\n" "maximum angular momentum" max_angular_momentum(file)
-    # @printf "%032s: %s\n" "number of beta projectors" n_radials(NumericProjector(), file)
-    # @printf "%032s: %s" "number of chi projectors" n_radials(NumericState(), file)
+    @printf "%032s: %s\n" "number of beta projectors" n_radials(BetaProjector(), file)
+    @printf "%032s: %s" "number of chi projectors" n_radials(ChiProjector(), file)
 end

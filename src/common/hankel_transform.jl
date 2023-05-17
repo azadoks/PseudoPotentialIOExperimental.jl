@@ -1,8 +1,8 @@
 function hankel_transform(r²f::AbstractVector{T}, mesh::RadialMesh{T}, qs::AbstractVector{TT},
                           work_weights::AbstractVector{T}, work_integrand::AbstractVector{T},
                           l::Int=0;
-                          quadrature_method::QuadratureMethod=Simpson())::AbstractVector{TT} where {T<:Real,
-                                                                                                    TT<:Real}
+                          quadrature_method::QuadratureMethod=Simpson(),
+                          kwargs...)::AbstractVector{TT} where {T<:Real,TT<:Real}
     r = collect(mesh)
     jₗ = fast_sphericalbesselj(l)
     work_weights = @view work_weights[eachindex(r)]

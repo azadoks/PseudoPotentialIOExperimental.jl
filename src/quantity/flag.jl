@@ -1,4 +1,5 @@
 abstract type PsPQuantityFlag end
+Base.Broadcast.broadcastable(flag::PsPQuantityFlag) = Ref(flag)
 
 struct LocalPotential <: PsPQuantityFlag end
 
