@@ -59,27 +59,27 @@ is_norm_conserving(::HghPsP)::Bool = true
 is_ultrasoft(::HghPsP)::Bool = false
 is_paw(::HghPsP)::Bool = false
 
-has_quantity(::HghPsP, ::PsPQuantityFlag) = false
+has_quantity(::HghPsP, ::AtomicQuantityFlag) = false
 has_quantity(::HghPsP, ::LocalPotential) = true
-has_quantity(::HghPsP, ::BetaProjector) = true
-has_quantity(::HghPsP, ::BetaCoupling) = true
+has_quantity(::HghPsP, ::NonLocalProjector) = true
+has_quantity(::HghPsP, ::NonLocalCoupling) = true
 
-get_quantity(psp::HghPsP, ::BetaCoupling) = psp.D
-get_quantity(psp::HghPsP, ::BetaCoupling, l) = psp.D[l]
-get_quantity(psp::HghPsP, ::BetaCoupling, l, n) = psp.D[l][n, n]
-get_quantity(psp::HghPsP, ::BetaCoupling, l, n, m) = psp.D[l][n, m]
-get_quantity(psp::HghPsP, ::BetaProjector) = psp.β
-get_quantity(psp::HghPsP, ::BetaProjector, l) = psp.β[l]
-get_quantity(psp::HghPsP, ::BetaProjector, l, n) = psp.β[l][n]
+get_quantity(psp::HghPsP, ::NonLocalCoupling) = psp.D
+get_quantity(psp::HghPsP, ::NonLocalCoupling, l) = psp.D[l]
+get_quantity(psp::HghPsP, ::NonLocalCoupling, l, n) = psp.D[l][n, n]
+get_quantity(psp::HghPsP, ::NonLocalCoupling, l, n, m) = psp.D[l][n, m]
+get_quantity(psp::HghPsP, ::NonLocalProjector) = psp.β
+get_quantity(psp::HghPsP, ::NonLocalProjector, l) = psp.β[l]
+get_quantity(psp::HghPsP, ::NonLocalProjector, l, n) = psp.β[l][n]
 get_quantity(psp::HghPsP, ::LocalPotential) = psp.Vloc
 
-n_radials(psp::HghPsP, ::BetaProjector, l::Int) = length(psp.β[l])
-n_radials(::HghPsP, ::ChiProjector, ::Int) = 0
+n_radials(psp::HghPsP, ::NonLocalProjector, l::Int) = length(psp.β[l])
+n_radials(::HghPsP, ::PseudoState, ::Int) = 0
 
 function hankel_transform(psp::HghPsP{T,RealSpace})::HghPsP{T,FourierSpace} where {T<:Real}
     Vloc = hankel_transform(get_quantity(psp, LocalPotential()))
 
-    β = map(get_quantity(psp, BetaProjector())) do βl
+    β = map(get_quantity(psp, NonLocalProjector())) do βl
         map(βl) do βln
             hankel_transform(βln)
         end

@@ -1,16 +1,35 @@
-abstract type PsPQuantityFlag end
-Base.Broadcast.broadcastable(flag::PsPQuantityFlag) = Ref(flag)
+abstract type AtomicQuantityFlag end
+Base.Broadcast.broadcastable(flag::AtomicQuantityFlag) = Ref(flag)
 
-struct LocalPotential <: PsPQuantityFlag end
+struct LocalPotential <: AtomicQuantityFlag end
 
-abstract type ProjectorFlag <: PsPQuantityFlag end
-struct BetaProjector <: ProjectorFlag end
-struct ChiProjector <: ProjectorFlag end
+abstract type ProjectorFlag <: AtomicQuantityFlag end
+struct NonLocalProjector <: ProjectorFlag end
+abstract type StateFlag <: ProjectorFlag end
+struct PseudoState <: StateFlag end
+struct HydrogenicState <: StateFlag end
 
-struct BetaCoupling <: PsPQuantityFlag end
+struct NonLocalCoupling <: AtomicQuantityFlag end
 
-struct ValenceChargeDensity <: PsPQuantityFlag end
-struct CoreChargeDensity <: PsPQuantityFlag end
+abstract type DensityFlag <: AtomicQuantityFlag end
+struct CoreDensity <: DensityFlag end
+abstract type ValenceDensityFlag <: DensityFlag end
+struct PseudoValenceDensity <: ValenceDensityFlag end
+struct GaussianValenceDensity <: ValenceDensityFlag end
 
-struct AugmentationFunction <: PsPQuantityFlag end
-struct AugmentationCoupling <: PsPQuantityFlag end
+struct AugmentationFunction <: AtomicQuantityFlag end
+struct AugmentationCoupling <: AtomicQuantityFlag end
+
+# Quantity
+#  - Local potential
+#  - Projector
+#    - Non-local potential projector
+#    - State projector
+#      - Pseudo-atomic state
+#      - Hydrogenic state
+#  - Charge density
+#    - Core charge density
+#    - Valence charge density
+#      - Pseudo-atomic valence charge density
+#      - Gaussian valence charge density
+#  - Augmentation function

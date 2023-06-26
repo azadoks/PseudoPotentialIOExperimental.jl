@@ -16,8 +16,8 @@ function rescale_vector(R, rmin, rmax)
     return R / norm(R) * (rand() * (rmax - rmin) + rmin)
 end
 
-QUANTITIES = [ValenceChargeDensity(), CoreChargeDensity(), BetaProjector(),
-              ChiProjector(), BetaCoupling(), LocalPotential(),
+QUANTITIES = [PseudoValenceDensity(), CoreDensity(), NonLocalProjector(),
+              PseudoState(), NonLocalCoupling(), LocalPotential(),
               AugmentationFunction(), AugmentationCoupling()]
 
 @testset "AbstractPsP" begin
@@ -28,10 +28,10 @@ QUANTITIES = [ValenceChargeDensity(), CoreChargeDensity(), BetaProjector(),
             @test isa(identifier(psp), AbstractString)
             @test isa(element(psp), PeriodicTable.Element)
             @test -1 <= max_angular_momentum(psp) <= 5
-            @test 0 <= n_radials(psp, BetaProjector())
-            @test 0 <= n_radials(psp, ChiProjector())
-            @test 0 <= n_angulars(psp, BetaProjector())
-            @test 0 <= n_angulars(psp, ChiProjector())
+            @test 0 <= n_radials(psp, NonLocalProjector())
+            @test 0 <= n_radials(psp, PseudoState())
+            @test 0 <= n_angulars(psp, NonLocalProjector())
+            @test 0 <= n_angulars(psp, PseudoState())
             @test 0 <= valence_charge(psp)
             @test 0 <= atomic_charge(psp)
             @test isa(is_norm_conserving(psp), Bool)
@@ -40,8 +40,8 @@ QUANTITIES = [ValenceChargeDensity(), CoreChargeDensity(), BetaProjector(),
             @test isa(has_spin_orbit(psp), Bool)
 
             for l in angular_momenta(psp)
-                @test 0 <= n_radials(psp, BetaProjector(), l)
-                @test 0 <= n_radials(psp, ChiProjector(), l)
+                @test 0 <= n_radials(psp, NonLocalProjector(), l)
+                @test 0 <= n_radials(psp, PseudoState(), l)
             end
 
             # TODO: test broadcasting, show
@@ -52,17 +52,17 @@ QUANTITIES = [ValenceChargeDensity(), CoreChargeDensity(), BetaProjector(),
             end
 
             for l in angular_momenta(psp)
-                @test size(get_quantity(psp, BetaCoupling(), l)) ==
-                      (n_radials(psp, BetaProjector(), l),
-                       n_radials(psp, BetaProjector(), l))
-                @test eltype(get_quantity(psp, BetaCoupling(), l)) <: Real
-                for n in 1:n_radials(psp, BetaProjector(), l)
-                    @test get_quantity(psp, BetaCoupling(), l, n, n) ==
-                          get_quantity(psp, BetaCoupling(), l, n)
-                    for m in (n + 1):n_radials(psp, BetaProjector(), l)
-                        @test isa(get_quantity(psp, BetaCoupling(), l, n, m), Real)
-                        @test get_quantity(psp, BetaCoupling(), l, n, m) ==
-                              get_quantity(psp, BetaCoupling(), l, m, n)
+                @test size(get_quantity(psp, NonLocalCoupling(), l)) ==
+                      (n_radials(psp, NonLocalProjector(), l),
+                       n_radials(psp, NonLocalProjector(), l))
+                @test eltype(get_quantity(psp, NonLocalCoupling(), l)) <: Real
+                for n in 1:n_radials(psp, NonLocalProjector(), l)
+                    @test get_quantity(psp, NonLocalCoupling(), l, n, n) ==
+                          get_quantity(psp, NonLocalCoupling(), l, n)
+                    for m in (n + 1):n_radials(psp, NonLocalProjector(), l)
+                        @test isa(get_quantity(psp, NonLocalCoupling(), l, n, m), Real)
+                        @test get_quantity(psp, NonLocalCoupling(), l, n, m) ==
+                              get_quantity(psp, NonLocalCoupling(), l, m, n)
                     end
                 end
             end
@@ -70,7 +70,7 @@ QUANTITIES = [ValenceChargeDensity(), CoreChargeDensity(), BetaProjector(),
             # K = rand(3) .+ eps(Float64)
             # K_rot = rotate_vector(random_versor(), K)
 
-            for quantity in [BetaProjector(), ChiProjector()]
+            for quantity in [NonLocalProjector(), PseudoState()]
                 if has_quantity(psp, quantity)
                     for l in angular_momenta(psp), n in 1:n_radials(psp, quantity, l)
                         # rmin = isa(psp, NumericPsP) ? first(psp.r) : 0
@@ -88,7 +88,7 @@ QUANTITIES = [ValenceChargeDensity(), CoreChargeDensity(), BetaProjector(),
                 end
             end
 
-            for quantity in [LocalPotential(), ValenceChargeDensity(), CoreChargeDensity()]
+            for quantity in [LocalPotential(), PseudoValenceDensity(), CoreDensity()]
                 if has_quantity(psp, quantity)
                     # rmin = isa(psp, NumericPsP) ? first(psp.r) : 0
                     # rmax = isa(psp, NumericPsP) ? psp.r[lastindex(get_quantity(psp, quantity))] : Inf

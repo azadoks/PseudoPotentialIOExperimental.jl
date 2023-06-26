@@ -22,30 +22,30 @@
             @test all(isapprox.(upf2_Vloc_q.(qs), hgh_Vloc_q.(qs), rtol=1e-6, atol=1e-6))
         end
 
-        @testset "BetaProjector()" begin
+        @testset "NonLocalProjector()" begin
             @testset "l=$(l)" for l in angular_momenta(hgh_r)
-                @test n_radials(upf2_r, BetaProjector(), l) == n_radials(hgh_r, BetaProjector(), l)
-                @testset "n=$(n)" for n in 1:n_radials(hgh_r, BetaProjector(), l)
-                    upf2_β_r = get_quantity(upf2_r, BetaProjector(), l, n)
-                    hgh_β_r = get_quantity(hgh_r, BetaProjector(), l, n)
+                @test n_radials(upf2_r, NonLocalProjector(), l) == n_radials(hgh_r, NonLocalProjector(), l)
+                @testset "n=$(n)" for n in 1:n_radials(hgh_r, NonLocalProjector(), l)
+                    upf2_β_r = get_quantity(upf2_r, NonLocalProjector(), l, n)
+                    hgh_β_r = get_quantity(hgh_r, NonLocalProjector(), l, n)
                     rgrid = collect(upf2_β_r.r)
                     # HGH provides β in units of Ha / √a₀, while UPF has been converted to 1 / √a₀
                     @test all(isapprox.(upf2_β_r.(rgrid), rgrid .^ 2 .* hgh_β_r.(rgrid) .* 2, rtol=1e-7,
                                         atol=1e-7))
 
-                    upf2_β_q = get_quantity(upf2_q, BetaProjector(), l, n)
-                    hgh_β_q = get_quantity(hgh_q, BetaProjector(), l, n)
+                    upf2_β_q = get_quantity(upf2_q, NonLocalProjector(), l, n)
+                    hgh_β_q = get_quantity(hgh_q, NonLocalProjector(), l, n)
                     # HGH provides β in units of Ha / √a₀, while UPF has been converted to 1 / √a₀
                     @test all(isapprox.(upf2_β_q.(qs), hgh_β_q.(qs) .* 2, rtol=1e-6, atol=1e-6))
                 end
             end
         end
 
-        @testset "BetaCoupling()" begin
+        @testset "NonLocalCoupling()" begin
             for l in angular_momenta(hgh_r)
                 # HGH provides D in units of 1 / Ha, while UPF has been converted to Ha
-                @test all(isapprox.(get_quantity(upf2_r, BetaCoupling(), l),
-                                    get_quantity(hgh_r, BetaCoupling(), l) ./ 4; rtol=1e-8, atol=1e-8))
+                @test all(isapprox.(get_quantity(upf2_r, NonLocalCoupling(), l),
+                                    get_quantity(hgh_r, NonLocalCoupling(), l) ./ 4; rtol=1e-8, atol=1e-8))
             end
         end
 

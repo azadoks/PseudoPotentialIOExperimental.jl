@@ -35,7 +35,7 @@
             end
             psp_q = hankel_transform(psp_r, qs)
 
-            @testset "$(flag)" for flag in (CoreChargeDensity(), ValenceChargeDensity())
+            @testset "$(flag)" for flag in (CoreDensity(), PseudoValenceDensity())
                 if has_quantity(psp_r, flag)
                     quantity_r = get_quantity(psp_r, flag)
                     rmin = minimum_radius(psp_r, flag)
@@ -58,7 +58,7 @@
                 end
             end
 
-            @testset "$(flag)" for flag in (BetaProjector(), ChiProjector())
+            @testset "$(flag)" for flag in (NonLocalProjector(), PseudoState())
                 if has_quantity(psp_r, flag)
                     @testset "l=$(l)" for l in angular_momenta(psp_r)
                         @testset "n=$(n)" for n in 1:n_radials(psp_r, flag, l)

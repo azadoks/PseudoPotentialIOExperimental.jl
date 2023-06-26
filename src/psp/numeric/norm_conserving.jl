@@ -191,19 +191,19 @@ function hankel_transform(psp::NormConservingPsP{T,S},
 
     Vloc = hankel_transform(get_quantity(psp, LocalPotential()), qs, work_weights, work_integrand, work_f;
                             kwargs...)
-    β = map(get_quantity(psp, BetaProjector())) do βl
+    β = map(get_quantity(psp, NonLocalProjector())) do βl
         map(βl) do βln
             return hankel_transform(βln, qs, work_weights, work_integrand, work_f; kwargs...)
         end
     end
-    χ = map(get_quantity(psp, ChiProjector())) do χl
+    χ = map(get_quantity(psp, PseudoState())) do χl
         map(χl) do χln
             return hankel_transform(χln, qs, work_weights, work_integrand, work_f; kwargs...)
         end
     end
-    ρcore = hankel_transform(get_quantity(psp, CoreChargeDensity()), qs, work_weights, work_integrand, work_f;
+    ρcore = hankel_transform(get_quantity(psp, CoreDensity()), qs, work_weights, work_integrand, work_f;
                              kwargs...)
-    ρval = hankel_transform(get_quantity(psp, ValenceChargeDensity()), qs, work_weights, work_integrand, work_f;
+    ρval = hankel_transform(get_quantity(psp, PseudoValenceDensity()), qs, work_weights, work_integrand, work_f;
                             kwargs...)
 
     return NormConservingPsP{TT,FourierSpace}(psp.identifier, psp.Zatom, psp.Zval, psp.lmax, Vloc, β, psp.D, χ,
@@ -212,17 +212,17 @@ end
 
 function interpolate_onto(psp::NormConservingPsP{T,S}, dest::Union{T,RadialMesh{T}}) where {T<:Real,S<:EvaluationSpace}
     Vloc = interpolate_onto(get_quantity(psp, LocalPotential()), dest)
-    β = map(get_quantity(psp, BetaProjector())) do βl
+    β = map(get_quantity(psp, NonLocalProjector())) do βl
         map(βl) do βln
             return interpolate_onto(βln, dest)
         end
     end
-    χ = map(get_quantity(psp, ChiProjector())) do χl
+    χ = map(get_quantity(psp, PseudoState())) do χl
         map(χl) do χln
             return interpolate_onto(χln, dest)
         end
     end
-    ρcore = interpolate_onto(get_quantity(psp, CoreChargeDensity()), dest)
-    ρval = interpolate_onto(get_quantity(psp, ValenceChargeDensity()), dest)
+    ρcore = interpolate_onto(get_quantity(psp, CoreDensity()), dest)
+    ρval = interpolate_onto(get_quantity(psp, PseudoValenceDensity()), dest)
     return NormConservingPsP{T,S}(psp.identifier, psp.Zatom, psp.Zval, psp.lmax, Vloc, β, psp.D, χ, ρcore, ρval)
 end

@@ -10,6 +10,9 @@
     #* For some elements, e.g. Li, the quantities seem to be non-exact matches between the
     #* formats; the tolerances are artifically inflated for these cases.
 
+    #* In general, all the UPFs are on a larger mesh than the PSP8s because the pseudo-atomic
+    #* states (χ-projectors) require it (PSP8 doesn't support this quantity).
+
     @testset "$(splitpath(psp8_path)[end])" for (upf2_path, psp8_path) in UPF2_PSP8_FILEPATHS
         psp8_r = load_psp(psp8_path)
         upf2_r = load_psp(upf2_path)
@@ -18,7 +21,7 @@
         @test valence_charge(upf2_r) == valence_charge(psp8_r)
         @test max_angular_momentum(upf2_r) == max_angular_momentum(psp8_r)
 
-        @testset "$(flag)" for flag in (LocalPotential(), CoreChargeDensity(), ValenceChargeDensity())
+        @testset "$(flag)" for flag in (LocalPotential(), CoreDensity(), PseudoValenceDensity())
             @test has_quantity(psp8_r, flag) == has_quantity(upf2_r, flag)
             if has_quantity(psp8_r, flag) && has_quantity(upf2_r, flag)
                 upf2_quant = get_quantity(upf2_r, flag)
@@ -35,12 +38,12 @@
             end
         end
 
-        @testset "BetaProjector()" begin
+        @testset "NonLocalProjector()" begin
             @testset "l=$(l)" for l in angular_momenta(psp8_r)
-                @test n_radials(upf2_r, BetaProjector(), l) == n_radials(psp8_r, BetaProjector(), l)
-                @testset "n=$(n)" for n in 1:n_radials(psp8_r, BetaProjector(), l)
-                    upf2_βln = get_quantity(upf2_r, BetaProjector(), l, n)
-                    psp8_βln = get_quantity(psp8_r, BetaProjector(), l, n)
+                @test n_radials(upf2_r, NonLocalProjector(), l) == n_radials(psp8_r, NonLocalProjector(), l)
+                @testset "n=$(n)" for n in 1:n_radials(psp8_r, NonLocalProjector(), l)
+                    upf2_βln = get_quantity(upf2_r, NonLocalProjector(), l, n)
+                    psp8_βln = get_quantity(psp8_r, NonLocalProjector(), l, n)
 
                     r_max = min(maximum_radius(upf2_βln), maximum_radius(psp8_βln))
                     r_grid = UniformMesh(r_min:Δr:r_max)
@@ -54,9 +57,10 @@
             end
         end
 
-        @testset "BetaCoupling()" begin
+        @testset "NonLocalCoupling()" begin
             for l in angular_momenta(psp8_r)
-                @test all(isapprox.(get_quantity(psp8_r, BetaCoupling(), l), get_quantity(upf2_r, BetaCoupling(), l); atol=1e-6, rtol=1e-6))
+                @test all(isapprox.(get_quantity(psp8_r, NonLocalCoupling(), l),
+                                    get_quantity(upf2_r, NonLocalCoupling(), l); atol=1e-6, rtol=1e-6))
             end
         end
 

@@ -33,14 +33,14 @@ using DocStringExtensions
 
 ## Flagging structs
 # (used in checking for and retrieving quantities from PsPFile and AbstractPsP structs)
-export PsPQuantityFlag
+export AtomicQuantityFlag
 export LocalPotential
-export ValenceChargeDensity
-export CoreChargeDensity
+export PseudoValenceDensity
+export CoreDensity
 export ProjectorFlag
-export ChiProjector
-export BetaProjector
-export BetaCoupling
+export PseudoState
+export NonLocalProjector
+export NonLocalCoupling
 export AugmentationFunction
 export AugmentationCoupling
 include("quantity/flag.jl")

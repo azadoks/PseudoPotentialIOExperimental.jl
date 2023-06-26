@@ -1,6 +1,7 @@
 Pkg.activate("play")
 begin
     using PseudoPotentialIOExperimental
+    import PseudoPotentialIOExperimental: NumericPsPQuantity
     import PseudoPotentialIOExperimental: ArbitraryMesh, UniformMesh, LogMesh, deriv
     import PseudoPotentialIOExperimental: NumericLocalPotential, NumericProjector, NumericDensity
     import PseudoPotentialIOExperimental: hankel_transform
@@ -15,53 +16,72 @@ begin
     using BSplineKit
 end
 
+function find_cutoff_index(x::AbstractVector{T}; atol=zero(T)) where {T}
+    i = findfirst(fi -> abs(fi) > atol, @view x[end:-1:begin])
+    return isnothing(i) ? lastindex(x) : lastindex(x) - i + 1
+end
+
+function cutoff(quantity::NumericPsPQuantity{T,S}; atol=zero(T)) where {T,S}
+    i_cut = find_cutoff_index(quantity.f; atol)
+    r_new = quantity.r[begin:i_cut]
+    return interpolate_onto(quantity, r_new)
+end
+
 begin
-    hgh_file = load_psp_file("hgh_lda_hgh", "si-q4.hgh")
-    hgh = load_psp(hgh_file)
-    hgh_q = hankel_transform(hgh)
-    upf_file = load_psp_file("hgh_lda_upf", "Si.pz-hgh.UPF")
+    ele = "Si"
+
+    psp8_file = load_psp_file("pd_nc_sr_pbe_standard_0.4.1_psp8", "$(ele).psp8")
+    psp8 = load_psp(psp8_file)
+    upf_file = load_psp_file("pd_nc_sr_pbe_standard_0.4.1_upf", "$(ele).upf")
     upf = load_psp(upf_file)
-    upf_q = hankel_transform(upf)
 
     l = 0
 
     let
         fig = Figure()
-        ax = Axis(fig[1,1])
-        for n in 1:n_radials(upf, BetaProjector(), l)
-            # rgrid = upf.β[l][n].r
-            # lines!(ax, rgrid, rgrid.^2 .* hgh.β[l][n].(rgrid) .* 2, color=:green)
-            # lines!(ax, rgrid, upf.β[l][n].(rgrid), color=:blue)
-            lines!(ax, qgrid, hgh_q.β[l][n].(qgrid) .* 2, linestyle=:solid)
-            lines!(ax, qgrid, upf_q.β[l][n].(qgrid), linestyle=:dash)
+        ax1 = Axis(fig[1,1], title=ele)
+        ax2 = Axis(fig[2,1])
+        for n in 1:n_radials(upf, NonLocalProjector(), l)
+            rmax = min(cutoff(psp8.β[l][n]).r[end], cutoff(upf.β[l][n]).r[end])
+            rgrid = 0.0:0.01:rmax
+            lines!(ax1, rgrid, psp8.β[l][n].(rgrid), label="psp8 β[$l][$n]")
+            lines!(ax1, rgrid, upf.β[l][n].(rgrid), label="upf2 β[$l][$n]", linestyle=:dash)
+            lines!(ax2, rgrid, psp8.β[l][n].(rgrid) .- upf.β[l][n].(rgrid), label="psp8-upf2 β[$l][$n]")
         end
+        axislegend(ax1)
+        axislegend(ax2)
         fig
     end
 end
 
-
 begin
-    psp8_file = load_psp_file("pd_nc_sr_pbe_standard_0.4.1_psp8", "Li.psp8")
+    ele = "Li"
+
+    psp8_file = load_psp_file("pd_nc_sr_pbe_standard_0.4.1_psp8", "$(ele).psp8")
     psp8 = load_psp(psp8_file)
-    upf_file = load_psp_file("pd_nc_sr_pbe_standard_0.4.1_upf", "Li.upf")
+    upf_file = load_psp_file("pd_nc_sr_pbe_standard_0.4.1_upf", "$(ele).upf")
     upf = load_psp(upf_file)
 
-    l = 1
+    l = 0
+    qgrid = 0:0.1:10
 
     let
         fig = Figure()
-        ax = Axis(fig[1,1])
-        for n in 1:n_radials(upf, BetaProjector(), l)
-            rgrid = 0.0:0.01:min(maximum_radius(psp8.β[l][n]), maximum_radius(upf.β[l][n]))
-            lines!(ax, rgrid, psp8.β[l][n].(rgrid))
-            lines!(ax, rgrid, upf.β[l][n].(rgrid))
-        end
+        ax1 = Axis(fig[1,1], title=ele)
+        ax2 = Axis(fig[2,1])
+        for n in 1:n_radials(upf, NonLocalProjector(), l)
+            rmax = min(cutoff(psp8.β[l][n]).r[end], cutoff(upf.β[l][n]).r[end])
+            rgrid = 0.0:0.01:rmax
 
-        ax = Axis(fig[2,1])
-        for n in 1:n_radials(upf, BetaProjector(), l)
-            rgrid = 0.0:0.01:min(maximum_radius(psp8.β[l][n]), maximum_radius(upf.β[l][n]))
-            lines!(ax, rgrid, psp8.β[l][n].(rgrid) .- upf.β[l][n].(rgrid))
+            psp8_β = hankel_transform(interpolate_onto(psp8.β[l][n], UniformMesh(rgrid)), qgrid)
+            upf_β = hankel_transform(interpolate_onto(upf.β[l][n], UniformMesh(rgrid)), qgrid)
+
+            lines!(ax1, qgrid, psp8_β.(qgrid), label="psp8 β[$l][$n]")
+            lines!(ax1, qgrid, upf_β.(qgrid), label="upf2 β[$l][$n]", linestyle=:dash)
+            lines!(ax2, qgrid, psp8_β.(qgrid) .- upf_β.(qgrid), label="psp8-upf2 β[$l][$n]")
         end
+        axislegend(ax1)
+        axislegend(ax2)
         fig
     end
 end

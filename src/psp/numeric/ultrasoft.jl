@@ -165,12 +165,12 @@ function hankel_transform(psp::UltrasoftPsP{T,S},
 
     Vloc = hankel_transform(get_quantity(psp, LocalPotential()), qs, work_weights, work_integrand, work_f;
                             kwargs...)
-    β = map(get_quantity(psp, BetaProjector())) do βl
+    β = map(get_quantity(psp, NonLocalProjector())) do βl
         map(βl) do βln
             return hankel_transform(βln, qs, work_weights, work_integrand, work_f; kwargs...)
         end
     end
-    χ = map(get_quantity(psp, ChiProjector())) do χl
+    χ = map(get_quantity(psp, PseudoState())) do χl
         map(χl) do χln
             return hankel_transform(χln, qs, work_weights, work_integrand, work_f; kwargs...)
         end
@@ -180,9 +180,9 @@ function hankel_transform(psp::UltrasoftPsP{T,S},
             return hankel_transform(Qijl, qs, work_weights, work_integrand, work_f; kwargs...)
         end
     end
-    ρcore = hankel_transform(get_quantity(psp, CoreChargeDensity()), qs, work_weights, work_integrand, work_f;
+    ρcore = hankel_transform(get_quantity(psp, CoreDensity()), qs, work_weights, work_integrand, work_f;
                              kwargs...)
-    ρval = hankel_transform(get_quantity(psp, ValenceChargeDensity()), qs, work_weights, work_integrand, work_f;
+    ρval = hankel_transform(get_quantity(psp, PseudoValenceDensity()), qs, work_weights, work_integrand, work_f;
                             kwargs...)
 
     return UltrasoftPsP{TT,FourierSpace}(psp.identifier, psp.Zatom, psp.Zval, psp.lmax, Vloc, β, psp.D, χ, Q,
@@ -192,12 +192,12 @@ end
 function interpolate_onto(psp::UltrasoftPsP{T,S},
                           maximum_spacing::T) where {T<:Real,S<:EvaluationSpace}
     Vloc = interpolate_onto(get_quantity(psp, LocalPotential()), maximum_spacing)
-    β = map(get_quantity(psp, BetaProjector())) do βl
+    β = map(get_quantity(psp, NonLocalProjector())) do βl
         map(βl) do βln
             return interpolate_onto(βln, maximum_spacing)
         end
     end
-    χ = map(get_quantity(psp, ChiProjector())) do χl
+    χ = map(get_quantity(psp, PseudoState())) do χl
         map(χl) do χln
             return interpolate_onto(χln, maximum_spacing)
         end
@@ -207,8 +207,8 @@ function interpolate_onto(psp::UltrasoftPsP{T,S},
             return interpolate_onto(Qijl, maximum_spacing)
         end
     end
-    ρcore = interpolate_onto(get_quantity(psp, CoreChargeDensity()), maximum_spacing)
-    ρval = interpolate_onto(get_quantity(psp, ValenceChargeDensity()), maximum_spacing)
+    ρcore = interpolate_onto(get_quantity(psp, CoreDensity()), maximum_spacing)
+    ρval = interpolate_onto(get_quantity(psp, PseudoValenceDensity()), maximum_spacing)
     return UltrasoftPsP{T,S}(psp.identifier, psp.Zatom, psp.Zval, psp.lmax, Vloc, β, psp.D, χ, Q, psp.q, ρcore,
                              ρval)
 end

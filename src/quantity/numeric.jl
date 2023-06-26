@@ -23,7 +23,8 @@ function interpolate_onto(q::NumericPsPQuantity{T,S},
     return interpolate_onto(q, r)
 end
 
-function (quantity::NumericPsPQuantity{T,S})(x::TT)::TT where {T<:Real,S<:EvaluationSpace,TT<:Real}
+#TODO: for some reason, this leads to run-time dispatch and terrible performance
+@inline function (quantity::NumericPsPQuantity{T,S})(x::TT)::TT where {T<:Real,S<:EvaluationSpace,TT<:Real}
     return quantity.itp(x)
 end
 

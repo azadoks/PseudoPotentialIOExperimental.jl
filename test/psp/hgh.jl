@@ -7,12 +7,12 @@
         psp_r = load_psp(filepath)
         psp_q = hankel_transform(psp_r)
 
-        @testset "BetaProjector()" begin
+        @testset "NonLocalProjector()" begin
             @testset "l=$(l)" for l in angular_momenta(psp_r)
-                @testset "n=$(n)" for n in 1:n_radials(psp_r, BetaProjector(), l)
-                    β_r = get_quantity(psp_r, BetaProjector(), l, n)
+                @testset "n=$(n)" for n in 1:n_radials(psp_r, NonLocalProjector(), l)
+                    β_r = get_quantity(psp_r, NonLocalProjector(), l, n)
                     β_q = hankel_transform(β_r)
-                    psp_β_q = get_quantity(psp_q, BetaProjector(), l, n)
+                    psp_β_q = get_quantity(psp_q, NonLocalProjector(), l, n)
 
                     integrand(r, q) = 4π * r^2 * β_r(r) * sphericalbesselj(l, q * r)
 

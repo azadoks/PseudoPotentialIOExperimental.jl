@@ -1,5 +1,5 @@
-QUANTITIES = [ValenceChargeDensity(), CoreChargeDensity(), BetaProjector(),
-              ChiProjector(), BetaCoupling(), LocalPotential(),
+QUANTITIES = [PseudoValenceDensity(), CoreDensity(), NonLocalProjector(),
+              PseudoState(), NonLocalCoupling(), LocalPotential(),
               AugmentationFunction()]
 
 @testset "AbstractPsPFile" begin
@@ -9,8 +9,8 @@ QUANTITIES = [ValenceChargeDensity(), CoreChargeDensity(), BetaProjector(),
         @test isa(format(file), AbstractString)
         @test isa(element(file), PeriodicTable.Element)
         @test -1 <= max_angular_momentum(file) <= 5
-        @test 0 <= n_radials(BetaProjector(), file)
-        @test 0 <= n_radials(ChiProjector(), file)
+        @test 0 <= n_radials(NonLocalProjector(), file)
+        @test 0 <= n_radials(PseudoState(), file)
         @test 0 <= valence_charge(file)
         @test isa(is_norm_conserving(file), Bool)
         @test isa(is_ultrasoft(file), Bool)
