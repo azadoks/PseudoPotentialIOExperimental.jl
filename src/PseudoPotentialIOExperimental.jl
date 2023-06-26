@@ -38,10 +38,8 @@ export is_paw
 export formalism
 export has_spin_orbit
 export relativistic_treatment
-export has_core_density
 export valence_charge
 export max_angular_momentum
-export n_radials
 include("file/file.jl")
 export UpfFile
 include("file/upf.jl")

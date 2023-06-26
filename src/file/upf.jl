@@ -358,16 +358,3 @@ has_spin_orbit(file::UpfFile)::Bool = file.header.has_so
 has_core_density(file::UpfFile)::Bool = file.header.core_correction
 valence_charge(file::UpfFile) = file.header.z_valence
 max_angular_momentum(file::UpfFile)::Int = file.header.l_max
-function n_radials(::NonLocalProjector, file::UpfFile, l::Int)::Int
-    return count(beta -> beta.angular_momentum == l, file.nonlocal.betas)
-end
-function n_radials(::PseudoState, file::UpfFile, l::Int)::Int
-    return file.header.number_of_wfc == 0 ? 0 : count(chi -> chi.l == l, file.pswfc)
-end
-has_quantity(::AtomicQuantityFlag, ::UpfFile) = false
-has_quantity(::LocalPotential, ::UpfFile) = true
-has_quantity(::NonLocalProjector, ::UpfFile) = true
-has_quantity(::NonLocalCoupling, ::UpfFile) = true
-has_quantity(::PseudoState, file::UpfFile) = !isnothing(file.pswfc)
-has_quantity(::CoreDensity, file::UpfFile) = !isnothing(file.nlcc)
-has_quantity(::PseudoValenceDensity, file::UpfFile) = !isnothing(file.rhoatom)
