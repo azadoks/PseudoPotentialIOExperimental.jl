@@ -102,9 +102,11 @@ function element(psp::HghFile)
     return haskey(PeriodicTable.elements, Symbol(symbol)) ? PeriodicTable.elements[Symbol(symbol)] : "??"
 end
 has_spin_orbit(::HghFile)::Bool = false
-has_core_density(::HghFile)::Bool = false
+has_nlcc(::HghFile)::Bool = false
 is_norm_conserving(::HghFile)::Bool = true
 is_ultrasoft(::HghFile)::Bool = false
 is_paw(::HghFile)::Bool = false
 valence_charge(psp::HghFile) = sum(psp.zion)
 max_angular_momentum(psp::HghFile)::Int = psp.lmax
+n_projector_radials(psp::HghFile)::Int = sum(length, psp.h)
+n_state_radials(psp::HghFile)::Int = 0

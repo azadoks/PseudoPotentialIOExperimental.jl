@@ -52,14 +52,19 @@ Whether the pseudopotential contains relativistic spin-orbit coupling data.
 """
 function has_spin_orbit(file::PsPFile) end
 
+"""
+Whether the pseudopotential contains non-linear core corrections.
+"""
+function has_nlcc(file::PsPFile) end
+
 #!!! Convenience functions !!!#
 """
 Formalism of the pseudopotential.
 """
-function formalism(file::PsPFile)::Type
-    is_paw(file) && return ProjectorAugmentedWavePsP
-    is_ultrasoft(file) && return UltrasoftPsP
-    is_norm_conserving(file) && return NormConservingPsP
+function formalism(file::PsPFile)::String
+    is_paw(file) && return "Projector-Augmented Wave"
+    is_ultrasoft(file) && return "Ultrasoft"
+    is_norm_conserving(file) && return "NormConserving"
 end
 
 """
@@ -86,8 +91,8 @@ function Base.show(io::IO, ::MIME"text/plain", file::PsPFile)
     @printf "%032s: %s\n" "element" element(file)
     @printf "%032s: %f\n" "valence charge" valence_charge(file)
     @printf "%032s: %s\n" "relativistic treatment" relativistic_treatment(file)
-    # @printf "%032s: %s\n" "non-linear core correction" has_quantity(CoreDensity(), file)
+    @printf "%032s: %s\n" "non-linear core correction" has_nlcc(file)
     @printf "%032s: %d\n" "maximum angular momentum" max_angular_momentum(file)
-    # @printf "%032s: %s\n" "number of beta projectors" n_radials(NonLocalProjector(), file)
-    # @printf "%032s: %s" "number of chi projectors" n_radials(PseudoState(), file)
+    @printf "%032s: %s\n" "number of beta projectors" n_projector_radials(file)
+    @printf "%032s: %s" "number of chi projectors" n_state_radials(file)
 end

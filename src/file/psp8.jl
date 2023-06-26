@@ -302,9 +302,11 @@ function element(file::Psp8File)
     return PeriodicTable.elements[Int(file.header.zatom)]
 end
 has_spin_orbit(file::Psp8File)::Bool = file.header.extension_switch in (2, 3)
-has_core_density(file::Psp8File)::Bool = file.header.fchrg > 0
+has_nlcc(file::Psp8File)::Bool = file.header.fchrg > 0
 is_norm_conserving(file::Psp8File)::Bool = true
 is_ultrasoft(file::Psp8File)::Bool = false
 is_paw(file::Psp8File)::Bool = false
 valence_charge(file::Psp8File) = file.header.zion
 max_angular_momentum(file::Psp8File)::Int = file.header.lmax
+n_projector_radials(psp::Psp8File)::Int = sum(psp.header.nproj)
+n_state_radials(psp::Psp8File)::Int = 0
