@@ -100,7 +100,7 @@ function get_pseudos_data(psps)
                                                     PseudoPotentialIOExperimental.element.(psps)),
                                    "Filename" => identifier.(psps),
                                    "Valence Charge" => valence_charge.(psps),
-                                   "NLCC" => has_core_density.(psps),
+                                   "NLCC" => has_nlcc.(psps),
                                    "Spin Orbit" => has_spin_orbit.(psps),
                                    "Format" => format.(psps),
                                    "Formalism" => formalism.(psps),

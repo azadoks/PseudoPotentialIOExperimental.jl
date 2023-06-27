@@ -3,10 +3,9 @@ using Artifacts
 using EzXML
 using LazyArtifacts
 using LinearAlgebra
-using OffsetArrays
 using Printf
-using Statistics
 using SHA
+using PrecompileTools
 using PrettyTables
 using OrderedCollections
 
@@ -67,4 +66,20 @@ export show_family_summary
 export show_family_table
 export show_family_periodic_table
 include("io/show.jl")
+
+@setup_workload begin
+    psp_file_tuples = [
+        ("pd_nc_sr_pbe_standard_0.4.1_psp8", "Si.psp8"),  # PSP8
+        ("sssp_pbesol_efficiency_1.1.2_upf", "Si.pbesol-n-rrkjus_psl.1.0.0.UPF"),  # UPF 2 USPP
+        ("sssp_pbesol_efficiency_1.1.2_upf", "be_pbesol_v1.4.uspp.F.UPF"),  # UPF 1 USPP
+        ("hgh_lda_hgh", "si-q4.hgh"),  # HGH
+    ]
+    io = IOBuffer()
+    @compile_workload begin
+        for psp_file_tuple in psp_file_tuples
+            psp_file = load_psp_file(psp_file_tuple...)
+            print(io, psp_file)
+        end
+    end
+end
 end
