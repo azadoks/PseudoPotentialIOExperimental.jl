@@ -78,7 +78,7 @@ function upf1_parse_header(io::IO)
 
     # Line 5 contains the QuantumESPRESSO-style string detailing the exchange-correlation
     # functional.
-    # The line looks something like: 
+    # The line looks something like:
     #     SLA  PW   PBX  PBC    PBE  Exchange-Correlation functional
     # We filter out any strings longer than 6 characters and create a cleaned
     # space-separated string like:
@@ -94,7 +94,7 @@ function upf1_parse_header(io::IO)
     s = split(readline(io))
     total_psenergy = parse(Float64, s[1])
 
-    # Line 8 contains the suggested kinetic-energy cutoffs for the wavefunctions and 
+    # Line 8 contains the suggested kinetic-energy cutoffs for the wavefunctions and
     # charge density (in Rydberg)
     s = split(readline(io))
     wfc_cutoff = parse(Float64, s[1])
@@ -114,7 +114,7 @@ function upf1_parse_header(io::IO)
     number_of_wfc = parse(Int, s[1])
     number_of_proj = parse(Int, s[2])
 
-    # These values are given by UPF v2 but not by v1. They are set to `nothing` or 
+    # These values are given by UPF v2 but not by v1. They are set to `nothing` or
     # a meaningful value depending on what UPF v1 supports
     generated = nothing
     author = nothing
@@ -309,7 +309,7 @@ end
 function upf1_parse_nonlocal(io::IO, pseudo_type::String, mesh_size::Int,
                              number_of_proj::Int, l_max::Int)
     # The `PP_NONLOCAL` superblock contains the KB non-local projectors, projector coupling
-    # coefficients, and (sometimes) augmentation charges 
+    # coefficients, and (sometimes) augmentation charges
     betas = upf1_parse_betas(io, number_of_proj)
     dij = upf1_parse_dij(io, number_of_proj)
     if pseudo_type in ("US", "USPP", "PAW")  # Ultrasoft and PAW have augmentation charges

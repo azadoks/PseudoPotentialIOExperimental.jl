@@ -241,7 +241,9 @@ function upf2_parse_beta(node::EzXML.Node)
     ultrasoft_cutoff_radius = get_attr(Float64, node, "ultrasoft_cutoff_radius")
     label = get_attr(String, node, "label")
     # PP_BETA.$i
-    beta = parse.(Float64, split(strip(nodecontent(node))))[1:cutoff_radius_index]
+    #* Note: all the data are parsed, not just up until the cutoff radius index
+    #* Note: it is the _user's_ responsibility to cut off the projector data
+    beta = parse.(Float64, split(strip(nodecontent(node))))  # [1:cutoff_radius_index]
     return UpfBeta(beta, index, angular_momentum, cutoff_radius_index, cutoff_radius,
                    norm_conserving_radius, ultrasoft_cutoff_radius, label)
 end
