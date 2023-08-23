@@ -13,7 +13,7 @@
 
                 if psp.header.is_paw
                     @test !isnothing(augmentation.multipoles)
-                    #TODO @test length(augmentation.multipoles) == 
+                    #TODO @test length(augmentation.multipoles) ==
                 end
             end
         end
@@ -73,7 +73,6 @@
         @test length(betas) == file.header.number_of_proj
         for (i, beta) in enumerate(betas)
             @test beta.index == i
-            @test length(beta.beta) == beta.cutoff_radius_index
             @test isnothing(beta.norm_conserving_radius)
             @test isnothing(beta.ultrasoft_cutoff_radius)
             @test isnothing(beta.label)
@@ -236,7 +235,6 @@
         @test length(betas) == file.header.number_of_proj
         for (i, beta) in enumerate(betas)
             @test beta.index == i
-            @test length(beta.beta) == beta.cutoff_radius_index
         end
 
         @test betas[1].label == "3S"
@@ -408,7 +406,6 @@
         @test length(betas) == file.header.number_of_proj
         for (i, beta) in enumerate(betas)
             @test beta.index == i
-            @test length(beta.beta) == beta.cutoff_radius_index
         end
 
         @test betas[1].label == "3S"

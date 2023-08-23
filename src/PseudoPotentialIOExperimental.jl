@@ -26,6 +26,9 @@ using DocStringExtensions
                   $(TYPEDFIELDS)
                   """
 
+## Data
+include("data/upf_functionals.jl")
+
 ## File datastructures and interface
 # (mirror file layout)
 export PsPFile
@@ -52,6 +55,7 @@ include("file/hgh.jl")
 ## Deprecated loaders
 export load_upf
 export load_psp8
+include("deprecated/mesh.jl")
 include("deprecated/upf.jl")
 include("deprecated/psp8.jl")
 

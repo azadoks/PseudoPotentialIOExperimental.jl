@@ -28,7 +28,7 @@ struct UpfHeader <: PsPFile
     paw_as_gipaw::Union{Nothing,Bool}
     "True if non-linear core correction is included"
     core_correction::Bool
-    "QuantumEspresso exchange-correlation identifier"
+    "QuantumEspresso exchange-correlation identifiers"
     functional::String
     "Pseudo-atomic charge"
     z_valence::Float64

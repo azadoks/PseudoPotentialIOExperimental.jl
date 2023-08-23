@@ -11,12 +11,14 @@
             @test length(upf["radial_grid_derivative"]) == upf["header"]["mesh_size"]
             r_params = upf["radial_grid_parameters"]
             if r_params["mesh_type"] == "log_1"
-                r = LogMeshWithoutZero{Float64}(r_params["a"], r_params["b"], upf["radial_grid"][1],
-                                                upf["radial_grid"][end], length(upf["radial_grid"]))
+                r = PseudoPotentialIOExperimental.LogMeshWithoutZero{Float64}(
+                    r_params["a"], r_params["b"], upf["radial_grid"][1],
+                    upf["radial_grid"][end], length(upf["radial_grid"]))
                 @test all(upf["radial_grid"] .≈ r)
             elseif r_params["mesh_type"] == "log_2"
-                r = LogMeshWithZero{Float64}(r_params["a"], r_params["b"], upf["radial_grid"][2],
-                                             upf["radial_grid"][3], length(upf["radial_grid"]))
+                r = PseudoPotentialIOExperimental.LogMeshWithZero{Float64}(
+                    r_params["a"], r_params["b"], upf["radial_grid"][2],
+                    upf["radial_grid"][3], length(upf["radial_grid"]))
                 @test all(upf["radial_grid"] .≈ r)
             elseif r_params["mesh_type"] == "linear"
                 @test all(isapprox.(round.(diff(upf["radial_grid"]), digits=4),

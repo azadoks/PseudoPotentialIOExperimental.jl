@@ -21,6 +21,7 @@ DocStringExtensions = "0.9"
 EzXML = "1"
 OrderedCollections = "1"
 PeriodicTable = "1"
+PrecompileTools = "1"
 PrettyTables = "2"
 julia = "1.6"
 

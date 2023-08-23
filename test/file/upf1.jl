@@ -50,7 +50,7 @@
         @test !header.has_gipaw
         @test isnothing(header.paw_as_gipaw)
         @test header.core_correction
-        @test header.functional == "SLA PZ NOGX NOGC PZ"
+        @test header.functional == "SLA PZ NOGX NOGC"
         @test header.z_valence == 19.00000000000
         @test header.total_psenergy == -295.20667856400
         @test header.wfc_cutoff == 0.00000
@@ -222,7 +222,7 @@
         @test !header.has_gipaw
         @test isnothing(header.paw_as_gipaw)
         @test header.core_correction
-        @test header.functional == "SLA PW PBE PBE PBE"
+        @test header.functional == "SLA PW PBE PBE"
         @test header.z_valence == 3.00000000000
         @test header.total_psenergy == -6.00744913082
         @test header.wfc_cutoff == 0.00000
@@ -390,7 +390,7 @@
         @test !header.has_gipaw
         @test isnothing(header.paw_as_gipaw)
         @test header.core_correction
-        @test header.functional == "SLA PW PSX PSC PBEsol"
+        @test header.functional == "SLA PW PSX PSC"
         @test header.z_valence == 4.00000000000
         @test header.total_psenergy == -9.13712037618
         @test header.wfc_cutoff == 0.00000
@@ -486,7 +486,7 @@
             @test length(qij.qij) == file.header.mesh_size
         end
         @test length(augmentation.qfcoefs) == 21
-        
+
         @test augmentation.qijs[1].first_index == 1
         @test augmentation.qijs[1].second_index == 1
         @test augmentation.qijs[1].qij[5] == 2.30032305636E-12
@@ -562,7 +562,7 @@
         @test !header.has_gipaw
         @test isnothing(header.paw_as_gipaw)
         @test !header.core_correction
-        @test header.functional == "SLA PW PBX PBC PBE"
+        @test header.functional == "SLA PW PBX PBC"
         @test header.z_valence == 10.00000000000
         @test header.total_psenergy == -125.08981684000
         @test header.wfc_cutoff == 0.00000

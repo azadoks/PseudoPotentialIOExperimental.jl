@@ -80,11 +80,31 @@ function upf1_parse_header(io::IO)
     # functional.
     # The line looks something like:
     #     SLA  PW   PBX  PBC    PBE  Exchange-Correlation functional
-    # We filter out any strings longer than 6 characters and create a cleaned
-    # space-separated string like:
-    #     SLA PW PBX PBC PBE
+    # We look at the first four words:
+    #     SLA PW PBX PBC
+    # which correspond to the LDA exchange, LDA correlation, GGA exchange, and GGA
+    # correlation functionals.
+    # We check that each word is a valid UPF functional string then add it to the cleaned
+    # functional string.
     s = strip.(split(strip(readline(io))))
-    functional = join(filter(s_i -> length(s_i) <= 6, s), ' ')
+    functional = []
+    functional_dictionaries = (
+        # The first word could be LDA exchange or a short name
+        [UPF_LDA_EXCHANGE..., UPF_SHORT_NAMES...],
+        UPF_LDA_CORRELATION,
+        UPF_GGA_EXCHANGE,
+        UPF_GGA_CORRELATION
+    )
+    for (word, dictionary) in zip(s, functional_dictionaries)
+        if in(word, [entry["name"] for entry in dictionary])
+            push!(functional, lowercase(word))
+        end
+    end
+    functional = join(functional, ' ')
+
+    functional_words = filter(s_i -> length(s_i) <= 6, s)
+    functional_words = functional_words[1:min(4, length(functional_words))]
+    functional = join(functional_words, ' ')
 
     # Line 6 contains the pseudo-ionic valence charge
     s = split(readline(io))
