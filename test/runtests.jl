@@ -2,17 +2,8 @@ using Test
 using PseudoPotentialIOExperimental
 using Aqua
 using LazyArtifacts
-using Random
 using PeriodicTable
-using Bessels
-using QuadGK
 using JSON
-using Quaternions
-using LinearAlgebra
-using BSplineKit
-import SpecialFunctions: erfi
-
-Random.seed!(0)
 
 TAGS = ARGS
 isempty(TAGS) && (TAGS = ["all"])
@@ -66,6 +57,7 @@ include("fixtures.jl")
 
     ## Deprecated
     if any(in.(("all", "deprecated"), Ref(TAGS)))
+        include("deprecated/mesh.jl")
         include("deprecated/upf.jl")
         include("deprecated/upf_json.jl")
         include("deprecated/upf_psp8.jl")

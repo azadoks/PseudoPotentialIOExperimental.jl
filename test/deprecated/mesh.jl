@@ -1,3 +1,7 @@
+import PseudoPotentialIOExperimental: RadialMesh, ArbitraryMesh, UniformMesh
+import PseudoPotentialIOExperimental: LogMeshWithZero, LogMeshWithoutZero
+import PseudoPotentialIOExperimental: deriv
+
 @testset "Mesh type guess" begin
     @testset "[UniformMesh] Mg.upf" begin
         psp = load_psp_file(UPF2_CASE_FILEPATHS["Mg.upf"])
