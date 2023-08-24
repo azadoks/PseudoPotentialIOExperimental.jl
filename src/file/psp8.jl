@@ -301,6 +301,29 @@ identifier(psp::Psp8File)::String = psp.identifier
 checksum(psp::Psp8File)::String = bytes2hex(psp.checksum)
 format(::Psp8File)::String = "PSP8"
 functional(psp::Psp8File)::String = string(psp.header.pspxc)
+function functional_libxc(psp::Psp8File)::String
+    pspxc = psp.header.pspxc
+    if pspxc > 0
+        entry_index = findfirst(entry -> entry["i"] == pspxc, PSP8_EXCHANGE_CORRELATION)
+        return PSP8_EXCHANGE_CORRELATION[entry_index]["libxc"]
+    else
+        # Invert the sign and get the digits (least significant first!)
+        libxc_digits = digits(-pspxc)
+        # Add any leading zeros
+        n_zero_padding = ceil(Int, length(libxc_digits) / 3) * 3 - length(libxc_digits)
+        append!(libxc_digits, zeros(Int, n_zero_padding))
+        # Reverse (most signficant first!)
+        reverse!(libxc_digits)
+        # ID digits in columns
+        n_ids = div(length(libxc_digits), 3)
+        libxc_digits = reshape(libxc_digits, (3, n_ids))
+        # Look up the LibXC codes
+        codes = map(eachcol(libxc_digits)) do id_digits
+            return LIBXC_FUNCTIONALS_BY_ID[parse(Int, join(id_digits))]
+        end
+        return join(codes, ' ')
+    end
+end
 function element(file::Psp8File)
     return PeriodicTable.elements[Int(file.header.zatom)]
 end

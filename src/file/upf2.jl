@@ -72,6 +72,8 @@ function upf2_parse_psp(io::IO; identifier="")
 end
 
 function upf2_parse_header(node::EzXML.Node)
+    functional_dlm(x) = isspace(x) || x == '-'
+
     generated = get_attr(String, node, "generated")
     author = get_attr(String, node, "author")
     date = get_attr(String, node, "date")
@@ -87,7 +89,7 @@ function upf2_parse_header(node::EzXML.Node)
     has_gipaw = get_attr(Bool, node, "has_gipaw")
     paw_as_gipaw = get_attr(Bool, node, "paw_as_gipaw")
     core_correction = get_attr(Bool, node, "core_correction")
-    functional = join(split(get_attr(String, node, "functional")), ' ')
+    functional = join(split(get_attr(String, node, "functional"), functional_dlm), ' ')
     z_valence = get_attr(Float64, node, "z_valence")
     total_psenergy = get_attr(Float64, node, "total_psenergy")
     wfc_cutoff = get_attr(Float64, node, "wfc_cutoff")

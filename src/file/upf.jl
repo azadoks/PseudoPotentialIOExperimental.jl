@@ -353,6 +353,36 @@ identifier(psp::UpfFile)::String = psp.identifier
 checksum(psp::UpfFile)::String = bytes2hex(psp.checksum)
 format(file::UpfFile)::String = "UPF v$(file.version)"
 functional(file::UpfFile)::String = file.header.functional
+function functional_libxc(file::UpfFile)
+    functional = file.header.functional
+    upf_codes = lowercase.(split(functional))
+
+    if length(upf_codes) == 1  # Short code
+        entry_index = findfirst(e -> e["name"] == upf_codes[1], UPF_SHORT_NAMES)
+        long_code = UPF_SHORT_NAMES[entry_index]["full_name"]
+        upf_codes = split(long_code, '+')
+    end
+
+    @assert length(upf_codes) == 4
+
+    if upf_codes[3] == "nogx"
+        exc_index = findfirst(e -> e["name"] == upf_codes[1], UPF_LDA_EXCHANGE)
+        exc = UPF_LDA_EXCHANGE[exc_index]["libxc"]
+    else
+        exc_index = findfirst(e -> e["name"] == upf_codes[3], UPF_GGA_EXCHANGE)
+        exc = UPF_GGA_EXCHANGE[exc_index]["libxc"]
+    end
+
+    if upf_codes[4] == "nogc"
+        corr_index = findfirst(e -> e["name"] == upf_codes[2], UPF_LDA_CORRELATION)
+        corr = UPF_LDA_CORRELATION[corr_index]["libxc"]
+    else
+        corr_index = findfirst(e -> e["name"] == upf_codes[4], UPF_GGA_CORRELATION)
+        corr = UPF_GGA_CORRELATION[corr_index]["libxc"]
+    end
+
+    return join([exc, corr], ' ')
+end
 element(file::UpfFile) = PeriodicTable.elements[Symbol(file.header.element)]
 is_norm_conserving(file::UpfFile)::Bool = file.header.pseudo_type == "NC"
 is_ultrasoft(file::UpfFile)::Bool = file.header.pseudo_type in ("US", "USPP")

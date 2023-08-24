@@ -28,17 +28,24 @@ using DocStringExtensions
 
 ## Data
 include("data/upf_functionals.jl")
+include("data/psp8_functionals.jl")
+include("data/libxc_functionals.jl")
 
 ## File datastructures and interface
 # (mirror file layout)
 export PsPFile
+export identifier
+export checksum
 export format
 export element
+export functional
+export functional_libxc
+export has_spin_orbit
+export has_nlcc
 export is_norm_conserving
 export is_ultrasoft
 export is_paw
 export formalism
-export has_spin_orbit
 export relativistic_treatment
 export ionic_charge
 export max_angular_momentum

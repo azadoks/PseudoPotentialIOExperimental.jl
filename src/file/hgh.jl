@@ -104,6 +104,7 @@ function element(psp::HghFile)
     return haskey(PeriodicTable.elements, Symbol(symbol)) ? PeriodicTable.elements[Symbol(symbol)] : "??"
 end
 functional(::HghFile)::String = ""
+functional_libxc(::HghFile)::String = ""
 has_spin_orbit(::HghFile)::Bool = false
 has_nlcc(::HghFile)::Bool = false
 is_norm_conserving(::HghFile)::Bool = true
