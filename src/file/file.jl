@@ -13,9 +13,19 @@ Identifying data (preferably unique).
 function identifier(file::PsPFile) end
 
 """
+SHA1 checksum of file contents.
+"""
+function checksum(file::PsPFile) end
+
+"""
 Pseudopotential file format.
 """
 function format(file::PsPFile) end
+
+"""
+Exchange-correlation functional in the file's format.
+"""
+function functional(file::PsPFile) end
 
 """
 The element which the pseudopotential was constructed to reproduce.
@@ -30,7 +40,7 @@ function max_angular_momentum(file::PsPFile) end
 """
 Pseudo-atomic valence charge.
 """
-function valence_charge(file::PsPFile) end
+function ionic_charge(file::PsPFile) end
 
 """
 Whether the pseudopotential is of the norm-conserving kind.
@@ -62,9 +72,9 @@ function has_nlcc(file::PsPFile) end
 Formalism of the pseudopotential.
 """
 function formalism(file::PsPFile)::String
-    is_paw(file) && return "Projector-Augmented Wave"
-    is_ultrasoft(file) && return "Ultrasoft"
-    is_norm_conserving(file) && return "NormConserving"
+    is_paw(file) && return "projector-augmented wave"
+    is_ultrasoft(file) && return "ultrasoft"
+    is_norm_conserving(file) && return "norm-conserving"
 end
 
 """
@@ -80,19 +90,22 @@ Base.hash(file::PsPFile) = hash(file.checksum)
 function Base.show(io::IO, file::PsPFile)
     typename = string(typeof(file))
     el = element(file)
-    z = valence_charge(file)
+    z = ionic_charge(file)
     return print(io, "$typename(element=$el, z_valence=$z)")
 end
 
 function Base.show(io::IO, ::MIME"text/plain", file::PsPFile)
     println(io, typeof(file))
     @printf "%032s: %s\n" "identifier" identifier(file)
-    @printf "%032s: %s\n" "formalism" formalism(file)
+    @printf "%032s: %s\n" "SHA1 checksum" checksum(file)
+    @printf "%032s: %s\n" "format" format(file)
     @printf "%032s: %s\n" "element" element(file)
-    @printf "%032s: %f\n" "valence charge" valence_charge(file)
-    @printf "%032s: %s\n" "relativistic treatment" relativistic_treatment(file)
-    @printf "%032s: %s\n" "non-linear core correction" has_nlcc(file)
+    @printf "%032s: %f\n" "valence charge" ionic_charge(file)
     @printf "%032s: %d\n" "maximum angular momentum" max_angular_momentum(file)
+    @printf "%032s: %s\n" "relativistic treatment" relativistic_treatment(file)
+    @printf "%032s: %s\n" "exchange-correlation functional" functional(file)
+    @printf "%032s: %s\n" "non-linear core correction" has_nlcc(file)
+    @printf "%032s: %s\n" "formalism" formalism(file)
     @printf "%032s: %s\n" "number of beta projectors" n_projector_radials(file)
-    @printf "%032s: %s" "number of chi projectors" n_state_radials(file)
+    @printf "%032s: %s" "number of chi projectors" n_orbital_radials(file)
 end

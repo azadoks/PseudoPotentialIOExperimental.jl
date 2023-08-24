@@ -309,9 +309,10 @@ struct UpfFile <: PsPFile
     gipaw::Union{Nothing,UpfGipaw}
 end
 
-function UpfFile(path::AbstractString)
+function UpfFile(path::AbstractString; identifier="")
+    identifier = isempty(identifier) ? splitpath(path)[end] : identifier
     open(path, "r") do io
-        return UpfFile(io; identifier=splitpath(path)[end])
+        return UpfFile(io; identifier)
     end
 end
 
@@ -349,14 +350,16 @@ function _get_upf_version(path::AbstractString)::Int
 end
 
 identifier(psp::UpfFile)::String = psp.identifier
+checksum(psp::UpfFile)::String = bytes2hex(psp.checksum)
 format(file::UpfFile)::String = "UPF v$(file.version)"
+functional(file::UpfFile)::String = file.header.functional
 element(file::UpfFile) = PeriodicTable.elements[Symbol(file.header.element)]
 is_norm_conserving(file::UpfFile)::Bool = file.header.pseudo_type == "NC"
 is_ultrasoft(file::UpfFile)::Bool = file.header.pseudo_type in ("US", "USPP")
 is_paw(file::UpfFile)::Bool = file.header.pseudo_type == "PAW"
 has_spin_orbit(file::UpfFile)::Bool = file.header.has_so
 has_nlcc(file::UpfFile)::Bool = file.header.core_correction
-valence_charge(file::UpfFile) = file.header.z_valence
+ionic_charge(file::UpfFile) = file.header.z_valence
 max_angular_momentum(file::UpfFile)::Int = file.header.l_max
 n_projector_radials(psp::UpfFile)::Int = psp.header.number_of_proj
-n_state_radials(psp::UpfFile)::Int = psp.header.number_of_wfc
+n_orbital_radials(psp::UpfFile)::Int = psp.header.number_of_wfc

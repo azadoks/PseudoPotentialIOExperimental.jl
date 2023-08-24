@@ -87,13 +87,15 @@ function HghFile(io::IO; identifier="")
     return HghFile(identifier, checksum, title, zion, rloc, nloc, cloc, lmax, rp, h)
 end
 
-function HghFile(path::AbstractString)
+function HghFile(path::AbstractString; identifier="")
+    identifier = isempty(identifier) ? splitpath(path)[end] : identifier
     open(path, "r") do io
-        return HghFile(io; identifier=splitpath(path)[end])
+        return HghFile(io; identifier)
     end
 end
 
 identifier(psp::HghFile)::String = psp.identifier
+checksum(psp::HghFile)::String = bytes2hex(psp.checksum)
 format(::HghFile)::String = "HGH"
 function element(psp::HghFile)
     title = split(psp.title)
@@ -101,12 +103,13 @@ function element(psp::HghFile)
     symbol = title[1]
     return haskey(PeriodicTable.elements, Symbol(symbol)) ? PeriodicTable.elements[Symbol(symbol)] : "??"
 end
+functional(::HghFile)::String = ""
 has_spin_orbit(::HghFile)::Bool = false
 has_nlcc(::HghFile)::Bool = false
 is_norm_conserving(::HghFile)::Bool = true
 is_ultrasoft(::HghFile)::Bool = false
 is_paw(::HghFile)::Bool = false
-valence_charge(psp::HghFile) = sum(psp.zion)
+ionic_charge(psp::HghFile) = sum(psp.zion)
 max_angular_momentum(psp::HghFile)::Int = psp.lmax
 n_projector_radials(psp::HghFile)::Int = sum(length, psp.h)
-n_state_radials(psp::HghFile)::Int = 0
+n_orbital_radials(psp::HghFile)::Int = 0

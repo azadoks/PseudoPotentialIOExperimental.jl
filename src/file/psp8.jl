@@ -286,9 +286,10 @@ function Psp8File(io::IO; identifier="")
                     nlcc.d3_rhoc_dr3, nlcc.d4_rhoc_dr4, rhov)
 end
 
-function Psp8File(path::AbstractString)
+function Psp8File(path::AbstractString; identifier="")
+    identifier = isempty(identifier) ? splitpath(path)[end] : identifier
     open(path, "r") do io
-        return Psp8File(io; identifier=splitpath(path)[end])
+        return Psp8File(io; identifier)
     end
 end
 
@@ -297,7 +298,9 @@ function _parse_fortran(::Type{T}, x::AbstractString) where {T<:Real}
 end
 
 identifier(psp::Psp8File)::String = psp.identifier
+checksum(psp::Psp8File)::String = bytes2hex(psp.checksum)
 format(::Psp8File)::String = "PSP8"
+functional(psp::Psp8File)::String = string(psp.header.pspxc)
 function element(file::Psp8File)
     return PeriodicTable.elements[Int(file.header.zatom)]
 end
@@ -306,7 +309,7 @@ has_nlcc(file::Psp8File)::Bool = file.header.fchrg > 0
 is_norm_conserving(file::Psp8File)::Bool = true
 is_ultrasoft(file::Psp8File)::Bool = false
 is_paw(file::Psp8File)::Bool = false
-valence_charge(file::Psp8File) = file.header.zion
+ionic_charge(file::Psp8File) = file.header.zion
 max_angular_momentum(file::Psp8File)::Int = file.header.lmax
 n_projector_radials(psp::Psp8File)::Int = sum(psp.header.nproj)
-n_state_radials(psp::Psp8File)::Int = 0
+n_orbital_radials(psp::Psp8File)::Int = 0

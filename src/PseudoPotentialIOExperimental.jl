@@ -40,7 +40,7 @@ export is_paw
 export formalism
 export has_spin_orbit
 export relativistic_treatment
-export valence_charge
+export ionic_charge
 export max_angular_momentum
 include("file/file.jl")
 export UpfFile
