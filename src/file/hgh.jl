@@ -6,6 +6,8 @@ struct HghFile <: PsPFile
     identifier::String
     "SHA1 Checksum"
     checksum::Vector{UInt8}
+    "Functional guessed from the source file path if available"
+    functional::String
     "Description"
     title::String
     "Pseudo-atomic (valence) charge"
@@ -26,6 +28,13 @@ end
 
 function HghFile(io::IO; identifier="")
     checksum = SHA.sha1(io)
+    if occursin("lda", identifier)
+        functional = "LDA_C LDA_X_PZ"
+    elseif occursin("pbe", identifier)
+        functional = "GGA_C_PBE GGA_X_PBE"
+    else
+        functional = ""
+    end
     seek(io, 0)
 
     lines = readlines(io)
@@ -84,7 +93,7 @@ function HghFile(io::IO; identifier="")
             hcoeff = [parse(Float64, part) for part in split(m[1])]
         end
     end
-    return HghFile(identifier, checksum, title, zion, rloc, nloc, cloc, lmax, rp, h)
+    return HghFile(identifier, checksum, functional, title, zion, rloc, nloc, cloc, lmax, rp, h)
 end
 
 function HghFile(path::AbstractString; identifier="")
@@ -103,8 +112,8 @@ function element(psp::HghFile)
     symbol = title[1]
     return haskey(PeriodicTable.elements, Symbol(symbol)) ? PeriodicTable.elements[Symbol(symbol)] : "??"
 end
-functional(::HghFile)::String = ""
-functional_libxc(::HghFile)::String = ""
+functional(psp::HghFile)::String = psp.functional
+functional_libxc(psp::HghFile)::String = functional(psp)
 has_spin_orbit(::HghFile)::Bool = false
 has_nlcc(::HghFile)::Bool = false
 is_norm_conserving(::HghFile)::Bool = true
